@@ -1,0 +1,106 @@
+<!-- templates/modelos.html -->
+{% extends "base.html" %}
+{% block titulo %}Modelos - FraudeDetect{% endblock %}
+{% block contenido %}
+<div class="pagina-header">
+    <h2>Modelos de Predicción</h2>
+    <p>Ranking comparativo de todos los modelos disponibles. (RF-10 / RNF-10)</p>
+</div>
+
+<!-- Ranking comparativo -->
+<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <h3>Ranking por ROC AUC</h3>
+        <a href="{{ url_for('exportar_ranking_modelos') }}" class="btn btn-secundario btn-sm">
+            ⬇️ Exportar ranking CSV
+        </a>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="tabla-metricas" style="width:100%;">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Modelo</th>
+                    <th>Tipo</th>
+                    <th>ROC AUC</th>
+                    <th>PR AUC</th>
+                    <th>Accuracy</th>
+                    <th>F1 Fraude</th>
+                    <th>Precisión</th>
+                    <th>Recall</th>
+                    <th>Especificidad</th>
+                    <th>Tamaño</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in modelos %}
+                <tr class="{{ 'fila-original' if m.es_original else '' }}">
+                    <td style="font-weight:800;color:var(--primario);">{{ loop.index }}</td>
+                    <td>
+                        <strong>{{ m.label }}</strong><br>
+                        <span style="font-size:.72rem;color:var(--texto-claro);">{{ m.nombre }}</span>
+                    </td>
+                    <td>
+                        {% if m.es_original %}
+                        <span class="badge-original">Original 🔒</span>
+                        {% else %}
+                        <span class="badge-correctivo">Reentrenado</span>
+                        {% endif %}
+                    </td>
+                    <td><strong>{{ m.roc_auc if m.roc_auc else "—" }}</strong></td>
+                    <td>{{ m.pr_auc if m.pr_auc else "—" }}</td>
+                    <td>{{ (m.accuracy|string ~ "%") if m.accuracy else "—" }}</td>
+                    <td>{{ m.f1_fraude if m.f1_fraude else "—" }}</td>
+                    <td>{{ m.precision_fraude if m.precision_fraude else "—" }}</td>
+                    <td>{{ m.recall_fraude if m.recall_fraude else "—" }}</td>
+                    <td>{{ m.especificidad if m.especificidad else "—" }}</td>
+                    <td style="font-size:.8rem;">{{ m.tamaño }}</td>
+                    <td style="white-space:nowrap;">
+                        <div style="display:flex;gap:.35rem;">
+                            <a href="{{ url_for('ver_metricas', modelo=m.nombre) }}"
+                               class="btn btn-secundario btn-sm">Gráficas</a>
+                            {% if not m.es_original %}
+                            <button class="btn btn-rojo btn-sm"
+                                    onclick="eliminarModelo('{{ m.nombre }}', {{ loop.index }})">
+                                🗑
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if not modelos %}
+    <p style="color:var(--texto-claro);padding:1rem;">No hay modelos disponibles.</p>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-top:1rem;">
+    <button class="btn btn-secundario" onclick="restaurar()">
+        ↩️ Restaurar modelo anterior (backup)
+    </button>
+</div>
+
+<script>
+function restaurar() {
+    if (!confirm("¿Restaurar el modelo anterior guardado en modelo_anterior.joblib?")) return;
+    fetch("/reentrenar/restaurar", {method:"POST"})
+    .then(r => r.json())
+    .then(d => { alert(d.msg); if (d.ok) location.reload(); });
+}
+function eliminarModelo(nombre, idx) {
+    if (!confirm(`¿Eliminar el modelo "${nombre}"?\nEsta acción no se puede deshacer.`)) return;
+    const fd = new FormData();
+    fd.append("nombre", nombre);
+    fetch("/modelos/eliminar", {method:"POST", body: fd})
+    .then(r => r.json())
+    .then(d => {
+        if (d.ok) { document.getElementById("mfila-"+idx)?.closest("tr")?.remove(); alert(d.msg); }
+        else alert("Error: " + d.msg);
+    });
+}
+</script>
+{% endblock %}

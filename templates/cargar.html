@@ -1,0 +1,188 @@
+<!-- templates/cargar.html -->
+{% extends "base.html" %}
+{% block titulo %}Cargar Archivo - FraudeDetect{% endblock %}
+{% block contenido %}
+<div class="pagina-header">
+    <h2>Cargar Archivo CSV</h2>
+    <p>Sube un archivo de transacciones. Se guardará automáticamente en la Database.</p>
+</div>
+
+{% if mensaje %}
+<div class="alerta alerta-exito">{{ mensaje|safe }}</div>
+{% endif %}
+{% if error %}
+<div class="alerta alerta-error">{{ error }}</div>
+{% endif %}
+{% if alerta_balanceo %}
+<div class="alerta alerta-error" style="border-color:#f59e0b;background:#fefce8;color:#854d0e;">
+    {{ alerta_balanceo }}
+</div>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAPEO MANUAL (solo aparece cuando el sistema necesita ayuda)
+════════════════════════════════════════════════════════════ -->
+{% if mapeo_manual %}
+<div class="card mapeo-card">
+    <h3>🔍 Asignación de columnas</h3>
+    <p class="mapeo-desc">{{ mapeo_manual.mensaje }}</p>
+
+    <!-- Columnas encontradas automáticamente -->
+    {% if mapeo_manual.encontradas %}
+    <div class="mapeo-seccion">
+        <div class="mapeo-seccion-titulo">✅ Columnas detectadas automáticamente</div>
+        <div class="mapeo-encontradas">
+            {% for req, csv in mapeo_manual.encontradas.items() %}
+            <div class="mapeo-fila-ok">
+                <span class="mapeo-req">{{ req.replace('_',' ') }}</span>
+                <span class="mapeo-flecha">→</span>
+                <span class="mapeo-csv">{{ csv }}</span>
+                {% if csv != req %}
+                <span class="mapeo-renombrado">renombrada</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Columnas que el usuario debe asignar -->
+    {% if mapeo_manual.faltantes %}
+    <form method="POST" action="{{ url_for('confirmar_mapeo') }}" id="form-mapeo">
+        <div class="mapeo-seccion">
+            <div class="mapeo-seccion-titulo">
+                ⚠️ Asigna las columnas faltantes
+                <span style="font-weight:400;color:var(--texto-claro);">
+                    — selecciona qué columna de tu archivo corresponde a cada una
+                </span>
+            </div>
+
+            <div class="mapeo-faltantes">
+                {% for col_req in mapeo_manual.faltantes %}
+                <div class="mapeo-fila-faltante">
+                    <div class="mapeo-req-info">
+                        <span class="mapeo-req">{{ col_req.replace('_',' ') }}</span>
+                        <span class="mapeo-req-desc">
+                            {% if col_req == 'Tipo_tarjeta' %}clasica · oro · platinum
+                            {% elif col_req == 'Estado_tarjeta' %}activa · bloqueada · vencida
+                            {% elif col_req == 'Fecha_vencimiento' %}YYYY-MM-DD
+                            {% elif col_req == 'Localizacion_tarjeta' %}nacional · internacional
+                            {% elif col_req == 'Acumulado_cupo' %}0.00 — 1.00
+                            {% elif col_req == 'Cuotas_mora' %}número entero
+                            {% elif col_req == 'Ind_estado' %}al dia · en mora · castigada
+                            {% elif col_req == 'Es_amparada' or col_req == 'Es_reexpedicion' %}0 o 1
+                            {% elif col_req == 'Tipo_nomina' %}gobierno · privada · independiente
+                            {% else %}—
+                            {% endif %}
+                        </span>
+                    </div>
+                    <select name="mapeo_{{ col_req }}" class="mapeo-select" required>
+                        <option value="">— Selecciona una columna —</option>
+                        <option value="__omitir__">No está en el archivo (omitir)</option>
+                        {% for col_csv in mapeo_manual.columnas_csv %}
+                        {% if col_csv not in mapeo_manual.encontradas.values() %}
+                        <option value="{{ col_csv }}">{{ col_csv }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="botones-grupo" style="margin-top:1.25rem;">
+                <button type="submit" class="btn btn-primario">
+                    ✅ Confirmar y cargar archivo
+                </button>
+                <a href="{{ url_for('cargar_archivo') }}" class="btn btn-secundario">
+                    Cancelar
+                </a>
+            </div>
+        </div>
+    </form>
+    {% endif %}
+</div>
+
+{% else %}
+
+<!-- Formulario de carga normal -->
+<div class="card">
+    <h3>Subir archivo</h3>
+    <form method="POST" enctype="multipart/form-data" id="form-carga" style="margin-top:.75rem;">
+        <div class="campo">
+            <label for="descripcion">Descripción <span style="color:var(--texto-claro);font-weight:400;">(opcional)</span></label>
+            <input type="text" id="descripcion" name="descripcion"
+                   placeholder="Ej: Fraudes octubre 2025, Dataset de prueba...">
+        </div>
+        <div class="drop-zone" id="drop-zone" style="margin-top:.75rem;">
+            <div class="drop-zona-icono">📁</div>
+            <p><strong>Arrastra tu archivo aquí</strong> o haz clic para seleccionar</p>
+            <p><small>Solo archivos .csv</small></p>
+            <input type="file" name="archivo" id="archivo" accept=".csv" class="input-file">
+        </div>
+        <div id="archivo-nombre" class="archivo-seleccionado" style="display:none;"></div>
+        <button type="submit" class="btn btn-primario btn-full" style="margin-top:.75rem;">
+            ⬆️ Cargar y guardar en Database
+        </button>
+    </form>
+</div>
+
+<!-- Columnas requeridas colapsable -->
+<div class="card" style="margin-top:1rem;">
+    <button class="colapsar-btn" onclick="toggleCols(this)" type="button">
+        <span>Ver columnas requeridas</span>
+        <span class="colapsar-icono">▼</span>
+    </button>
+    <div id="cols-contenido" style="display:none;margin-top:1rem;">
+        <div class="cols-tabla-header">
+            <span>Columna</span><span>Tipo de dato</span><span>Posibles valores</span>
+        </div>
+        <div class="cols-tabla">
+            <div class="col-fila"><span class="col-nombre">Número de tarjeta</span><span class="col-tipo">Texto</span><span class="col-tip">Identificador único</span></div>
+            <div class="col-fila"><span class="col-nombre">Tipo de tarjeta</span><span class="col-tipo">Categórico</span><span class="col-tip">clasica · oro · platinum</span></div>
+            <div class="col-fila"><span class="col-nombre">Estado de tarjeta</span><span class="col-tipo">Categórico</span><span class="col-tip">activa · bloqueada · vencida</span></div>
+            <div class="col-fila"><span class="col-nombre">Fecha de vencimiento</span><span class="col-tipo">Fecha</span><span class="col-tip">YYYY-MM-DD</span></div>
+            <div class="col-fila"><span class="col-nombre">Indicador repositorio</span><span class="col-tipo">Binario</span><span class="col-tip">0 o 1</span></div>
+            <div class="col-fila"><span class="col-nombre">Localización de tarjeta</span><span class="col-tipo">Categórico</span><span class="col-tip">nacional · internacional</span></div>
+            <div class="col-fila"><span class="col-nombre">Acumulado de cupo</span><span class="col-tipo">Decimal</span><span class="col-tip">0.00 — 1.00</span></div>
+            <div class="col-fila"><span class="col-nombre">Fecha último retiro</span><span class="col-tipo">Fecha</span><span class="col-tip">YYYY-MM-DD (puede estar vacío)</span></div>
+            <div class="col-fila"><span class="col-nombre">Cuotas en mora</span><span class="col-tipo">Entero</span><span class="col-tip">0, 1, 2, 3...</span></div>
+            <div class="col-fila"><span class="col-nombre">Indicador de estado</span><span class="col-tipo">Categórico</span><span class="col-tip">al dia · en mora · castigada</span></div>
+            <div class="col-fila"><span class="col-nombre">Es amparada</span><span class="col-tipo">Binario</span><span class="col-tip">0 o 1</span></div>
+            <div class="col-fila"><span class="col-nombre">Es reexpedición</span><span class="col-tipo">Binario</span><span class="col-tip">0 o 1</span></div>
+            <div class="col-fila"><span class="col-nombre">Tipo de nómina</span><span class="col-tipo">Categórico</span><span class="col-tip">gobierno · privada · independiente</span></div>
+        </div>
+        <div class="plantilla-fila" style="margin-top:1rem;">
+            <div class="tooltip-wrap">
+                <a href="{{ url_for('descargar_plantilla') }}" class="btn-plantilla">
+                    ⬇️ Descargar plantilla CSV
+                </a>
+                <div class="tooltip-texto">💡 La plantilla incluye 2 filas de ejemplo con los formatos esperados.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top:1rem;">
+    <div class="db-acceso-rapido">
+        <div>
+            <h3>¿Ya tienes archivos guardados?</h3>
+            <p>Accede a la Database para usar archivos anteriores.</p>
+        </div>
+        <a href="{{ url_for('ver_database') }}" class="btn btn-secundario">Ver Database</a>
+    </div>
+</div>
+
+{% endif %}
+
+<script>
+function toggleCols(btn) {
+    const cont  = document.getElementById("cols-contenido");
+    const icono = btn.querySelector(".colapsar-icono");
+    const span  = btn.querySelector("span:first-child");
+    const abierto = cont.style.display !== "none";
+    cont.style.display = abierto ? "none" : "block";
+    icono.textContent  = abierto ? "▼" : "▲";
+    span.textContent   = abierto ? "Ver columnas requeridas" : "Ocultar columnas";
+}
+</script>
+{% endblock %}

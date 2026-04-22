@@ -1,0 +1,94 @@
+<!-- templates/datos.html -->
+{% extends "base.html" %}
+{% block titulo %}Ver Datos - FraudeDetect{% endblock %}
+{% block contenido %}
+<div class="pagina-header">
+    <h2>📋 Datos Cargados</h2>
+    <p>
+        Total: <strong>{{ total }}</strong> registros · Página {{ pagina }} de {{ total_paginas }}
+        {% if db_nombre %} · 📄 <span style="color:var(--texto-claro);">{{ db_nombre }}</span>{% endif %}
+    </p>
+</div>
+
+<div class="barra-herramientas">
+    <form method="GET" class="form-busqueda">
+        <input type="text" name="busqueda" value="{{ busqueda }}"
+               placeholder="🔍 Buscar en los datos...">
+        <button type="submit" class="btn btn-secundario">Buscar</button>
+        {% if busqueda %}
+        <a href="{{ url_for('visualizar_datos') }}" class="btn btn-secundario">Limpiar</a>
+        {% endif %}
+    </form>
+    <div class="botones-grupo">
+        <a href="{{ url_for('cargar_archivo') }}" class="btn btn-secundario">⬆️ Cargar otro</a>
+        <a href="{{ url_for('ver_database') }}" class="btn btn-secundario">🗄️ Database</a>
+    </div>
+</div>
+
+{% if stats %}
+<!-- Panel de preprocesamiento (RF-03, RF-04, RF-05, RNF-03, RNF-04, RNF-05) -->
+<div class="card prep-panel" style="margin-bottom:1rem;">
+    <h3>📊 Resumen del dataset cargado</h3>
+    <div class="prep-grid">
+        <div class="prep-item">
+            <div class="prep-valor">{{ "{:,}".format(stats.n_filas) }}</div>
+            <div class="prep-label">Registros totales</div>
+        </div>
+        <div class="prep-item {{ 'prep-item-alerta' if stats.valores_nulos > 0 else 'prep-item-ok' }}">
+            <div class="prep-valor">{{ stats.valores_nulos }}</div>
+            <div class="prep-label">Valores nulos
+                {% if stats.valores_nulos > 0 %}
+                <span class="prep-nota">imputados automáticamente</span>
+                {% else %}
+                <span class="prep-nota-ok">ninguno</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="prep-item {{ 'prep-item-alerta' if stats.n_outliers > 0 else 'prep-item-ok' }}">
+            <div class="prep-valor">{{ stats.n_outliers }}</div>
+            <div class="prep-label">Outliers detectados (IQR)
+                {% if stats.n_outliers > 0 %}
+                <span class="prep-nota">marcados, no eliminados</span>
+                {% else %}
+                <span class="prep-nota-ok">ninguno</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="prep-item prep-item-info">
+            <div class="prep-valor">Z-score</div>
+            <div class="prep-label">Normalización aplicada
+                <span class="prep-nota">StandardScaler en columnas numéricas</span>
+            </div>
+        </div>
+        {% if stats.pct_fraude is not none %}
+        <div class="prep-item {{ 'prep-item-alerta' if stats.pct_fraude < 5 or stats.pct_fraude > 50 else 'prep-item-ok' }}">
+            <div class="prep-valor">{{ stats.pct_fraude }}%</div>
+            <div class="prep-label">Proporción de fraudes
+                {% if stats.pct_fraude < 5 %}
+                <span class="prep-nota">⚠️ Dataset desbalanceado</span>
+                {% elif stats.pct_fraude > 50 %}
+                <span class="prep-nota">⚠️ Alta proporción inusual</span>
+                {% else %}
+                <span class="prep-nota-ok">proporción adecuada</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<div class="tabla-contenedor">
+    {{ tabla | safe }}
+</div>
+
+<div class="paginacion">
+    {% if pagina > 1 %}
+    <a href="?pagina={{ pagina-1 }}&busqueda={{ busqueda }}" class="btn btn-secundario">← Anterior</a>
+    {% endif %}
+    <span>Página {{ pagina }} / {{ total_paginas }}</span>
+    {% if pagina < total_paginas %}
+    <a href="?pagina={{ pagina+1 }}&busqueda={{ busqueda }}" class="btn btn-secundario">Siguiente →</a>
+    {% endif %}
+</div>
+{% endblock %}

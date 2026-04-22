@@ -1,0 +1,37 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}Sistema Detección de Fraude{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+{% if session.usuario %}
+<nav class="navbar">
+    <div class="nav-brand">🛡️ FraudeDetect</div>
+    <div class="nav-links">
+        <a href="{{ url_for('dashboard') }}"      class="{% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a>
+        <a href="{{ url_for('cargar_archivo') }}"  class="{% if request.endpoint == 'cargar_archivo' %}active{% endif %}">Cargar Archivo</a>
+        <a href="{{ url_for('ver_database') }}"     class="{% if request.endpoint == 'ver_database' %}active{% endif %}">Database</a>
+        <a href="{{ url_for('visualizar_datos') }}" class="{% if request.endpoint == 'visualizar_datos' %}active{% endif %}">Ver Datos</a>
+        <a href="{{ url_for('ejecutar_modelo') }}"  class="{% if request.endpoint == 'ejecutar_modelo' %}active{% endif %}">Ejecutar Modelo</a>
+        <a href="{{ url_for('ver_resultados') }}"   class="{% if request.endpoint == 'ver_resultados' %}active{% endif %}">Resultados</a>
+        <a href="{{ url_for('ver_historial') }}"    class="{% if request.endpoint == 'ver_historial' %}active{% endif %}">Historial</a>
+        <a href="{{ url_for('ver_metricas') }}"     class="{% if request.endpoint == 'ver_metricas' %}active{% endif %}">Métricas</a>
+        <a href="{{ url_for('ver_modelos') }}"   class="{% if request.endpoint == 'ver_modelos' %}active{% endif %}">🧠 Ensemble</a>
+        <span class="nav-usuario">👤 {{ session.usuario }}</span>
+        <a href="{{ url_for('logout') }}" class="btn-logout">Salir</a>
+    </div>
+</nav>
+{% endif %}
+
+<main class="contenido">
+    {% block contenido %}{% endblock %}
+</main>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

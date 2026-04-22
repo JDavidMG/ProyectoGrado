@@ -1,0 +1,151 @@
+<!-- templates/ejecutar.html -->
+{% extends "base.html" %}
+{% block titulo %}Ejecutar Modelo - FraudeDetect{% endblock %}
+{% block contenido %}
+<div class="pagina-header">
+    <h2>Ejecutar Modelo de Detección</h2>
+    <p>Selecciona el modelo y clasifica las transacciones cargadas.</p>
+</div>
+
+{% if error %}<div class="alerta alerta-error">{{ error }}</div>{% endif %}
+
+<form method="POST" id="form-ejecutar">
+
+<div class="card">
+    <h3>Archivo cargado</h3>
+    <ul style="margin-top:.5rem;font-size:.9rem;">
+        <li>Registros: <strong>{{ n_filas }}</strong></li>
+    </ul>
+</div>
+
+<div class="card" style="margin-top:1rem;">
+    <h3>Nombre del análisis</h3>
+    <p style="color:var(--texto-claro);font-size:.875rem;margin:.4rem 0 .75rem;">
+        Dale un nombre para identificarlo en el historial.
+    </p>
+    <input type="text" name="nombre_analisis" id="nombre_analisis"
+           placeholder="Ej: Análisis fraudes octubre 2025"
+           required
+           style="width:100%;padding:.65rem .9rem;border:1.5px solid var(--borde);
+                  border-radius:8px;font-size:.95rem;">
+    <p id="nombre-req-error" style="color:var(--rojo);font-size:.8rem;
+                                     margin-top:.3rem;display:none;">
+        ⚠️ El nombre es obligatorio.
+    </p>
+</div>
+
+<div class="card" style="margin-top:1rem;">
+    <h3>Seleccionar modelo</h3>
+
+    <!-- Modelo original — SIEMPRE visible y destacado -->
+    {% set originales = modelos | selectattr('es_original') | list %}
+    {% for m in originales %}
+    <div class="modelo-original-destacado" id="bloque-original">
+        <div class="mod-dest-izq">
+            <div class="mod-dest-check" id="check-original">✅</div>
+            <div>
+                <div class="mod-dest-titulo">
+                    🏛️ {{ m.label }}
+                    <span class="badge-original">Original</span>
+                </div>
+                <div class="mod-dest-meta">{{ m.nombre }} · {{ m.tamaño }} · {{ m.fecha }}</div>
+            </div>
+        </div>
+        <input type="radio" name="modelo_sel" value="{{ m.ruta }}"
+               id="radio-original" checked style="display:none;">
+    </div>
+    {% endfor %}
+
+    <!-- Botón para ver reentrenados -->
+    {% set reentrenados = modelos | rejectattr('es_original') | list %}
+    {% if reentrenados %}
+    <button type="button" class="btn-otros-modelos" id="btn-otros" onclick="toggleOtros()">
+        Ver modelos reentrenados ({{ reentrenados|length }}) ▼
+    </button>
+    <div id="otros-modelos" style="display:none;margin-top:.75rem;">
+        <div style="font-size:.78rem;font-weight:700;color:#7c3aed;
+                    text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;">
+            Reentrenados — RedNeuronal/modelos_reentrenados/
+        </div>
+        {% for m in reentrenados %}
+        <label class="modelo-opcion modelo-opcion-retrain" id="label-ret-{{ loop.index }}">
+            <input type="radio" name="modelo_sel" value="{{ m.ruta }}"
+                   onchange="seleccionarReentrenado(this, 'label-ret-{{ loop.index }}')">
+            <div class="modelo-opcion-cuerpo" id="cuerpo-ret-{{ loop.index }}">
+                <div class="modelo-opcion-header">
+                    <span class="modelo-indicador" id="ind-ret-{{ loop.index }}"></span>
+                    <span class="modelo-opcion-icono">🔧</span>
+                    <span class="modelo-opcion-nombre">{{ m.label }}</span>
+                    <span class="badge-correctivo">Reentrenado</span>
+                </div>
+                <div class="modelo-opcion-meta">
+                    {{ m.nombre }} · {{ m.tamaño }} · {{ m.fecha }}
+                </div>
+            </div>
+        </label>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<div style="margin-top:1rem;">
+    <button type="submit" class="btn btn-primario btn-full" id="btn-ejecutar"
+            {% if not modelos %}disabled{% endif %}>
+        Ejecutar Modelo
+    </button>
+</div>
+</form>
+
+<div id="cargando" style="display:none;" class="cargando-overlay">
+    <div class="spinner"></div>
+    <p>Procesando transacciones...</p>
+</div>
+
+<script>
+function toggleOtros() {
+    const div  = document.getElementById("otros-modelos");
+    const btn  = document.getElementById("btn-otros");
+    const n    = {{ reentrenados|length if reentrenados else 0 }};
+    const open = div.style.display !== "none";
+    div.style.display = open ? "none" : "block";
+    btn.textContent   = open ? `Ver modelos reentrenados (${n}) ▼`
+                              : `Ocultar modelos reentrenados ▲`;
+}
+
+function seleccionarReentrenado(radio, labelId) {
+    // Quitar selección de todos los reentrenados
+    document.querySelectorAll(".modelo-indicador").forEach(i => i.textContent = "");
+    document.querySelectorAll(".modelo-opcion-cuerpo").forEach(c => c.classList.remove("modelo-sel-activo"));
+    // Quitar highlight del original
+    document.getElementById("bloque-original").classList.remove("mod-dest-activo");
+    document.getElementById("check-original").textContent = "";
+    // Marcar el seleccionado
+    const ind = radio.closest(".modelo-opcion").querySelector(".modelo-indicador");
+    if (ind) ind.textContent = "✅";
+    radio.closest(".modelo-opcion").querySelector(".modelo-opcion-cuerpo").classList.add("modelo-sel-activo");
+}
+
+// Si cambian de reentrenado a original (si hacen click directo en el bloque)
+document.getElementById("bloque-original")?.addEventListener("click", function() {
+    document.getElementById("radio-original").checked = true;
+    document.querySelectorAll(".modelo-indicador").forEach(i => i.textContent = "");
+    document.querySelectorAll(".modelo-opcion-cuerpo").forEach(c => c.classList.remove("modelo-sel-activo"));
+    document.getElementById("bloque-original").classList.add("mod-dest-activo");
+    document.getElementById("check-original").textContent = "✅";
+});
+
+document.getElementById("form-ejecutar").addEventListener("submit", function(e) {
+    const nombre = document.getElementById("nombre_analisis").value.trim();
+    if (!nombre) {
+        e.preventDefault();
+        document.getElementById("nombre-req-error").style.display = "block";
+        document.getElementById("nombre_analisis").style.borderColor = "var(--rojo)";
+        document.getElementById("nombre_analisis").focus();
+        return;
+    }
+    document.getElementById("btn-ejecutar").disabled    = true;
+    document.getElementById("btn-ejecutar").textContent = "Procesando...";
+    document.getElementById("cargando").style.display   = "flex";
+});
+</script>
+{% endblock %}

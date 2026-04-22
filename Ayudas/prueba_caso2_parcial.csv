@@ -1,0 +1,3 @@
+Tipo_tarjeta,estado_tarjeta,Fecha_vencimiento,repositorio_ind,ciudad,Acumulado_cupo,fecha_mov,Cuotas_mora,estado_cuenta,Es_amparada,col_desconocida,nomina_tipo
+clasica,activa,2026-08-15,0,nacional,0.35,2025-08-01,0,al dia,0,0,privada
+oro,bloqueada,2024-03-10,1,internacional,0.95,,4,en mora,1,1,independiente

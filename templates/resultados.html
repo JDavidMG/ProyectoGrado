@@ -1,0 +1,1042 @@
+<!-- templates/resultados.html -->
+{% extends "base.html" %}
+{% block titulo %}Resultados - FraudeDetect{% endblock %}
+
+{% block contenido %}
+<div class="pagina-header">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.5rem;">
+        <div>
+            <h2>Resultados de Clasificación</h2>
+            {% if nombre_analisis %}
+            <p>📋 <strong>{{ nombre_analisis }}</strong>
+               · 🧠 {{ modelo_usado }}
+               · 📅 Cargado en sesión</p>
+            {% endif %}
+        </div>
+        <a href="{{ url_for('ver_historial') }}" class="btn btn-secundario btn-sm">
+            🕐 Ver Historial
+        </a>
+    </div>
+</div>
+
+<!-- Resumen superior -->
+<div class="tarjetas-grid">
+    <div class="tarjeta tarjeta-rojo">
+        <div class="tarjeta-icono">⚠️</div>
+        <div class="tarjeta-info">
+            <div class="tarjeta-valor">{{ n_fraudes }}</div>
+            <div class="tarjeta-label">Fraudes Detectados</div>
+        </div>
+    </div>
+    <div class="tarjeta tarjeta-verde">
+        <div class="tarjeta-icono">✅</div>
+        <div class="tarjeta-info">
+            <div class="tarjeta-valor">{{ n_legitimas }}</div>
+            <div class="tarjeta-label">Legítimas</div>
+        </div>
+    </div>
+    <div class="tarjeta tarjeta-azul">
+        <div class="tarjeta-icono">📊</div>
+        <div class="tarjeta-info">
+            <div class="tarjeta-valor">{{ "%.1f%%"|format(n_fraudes / (n_fraudes + n_legitimas) * 100) if (n_fraudes + n_legitimas) > 0 else "0%" }}</div>
+            <div class="tarjeta-label">Tasa de Fraude</div>
+        </div>
+    </div>
+    {% if analisis %}
+    <div class="tarjeta tarjeta-naranja">
+        <div class="tarjeta-icono">🎯</div>
+        <div class="tarjeta-info">
+            <div class="tarjeta-valor">{{ analisis.precision }}</div>
+            <div class="tarjeta-label">Precisión</div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ─── PESTAÑAS ──────────────────────────────── -->
+<div class="tabs">
+    <a href="?tab=fraudes&pagina=1"
+       class="tab {{ 'tab-activo tab-rojo' if tab=='fraudes' else '' }}">
+        ⚠️ Fraudes Detectados
+        <span class="tab-badge">{{ n_fraudes }}</span>
+    </a>
+    <a href="?tab=legitimas&pagina=1"
+       class="tab {{ 'tab-activo tab-verde' if tab=='legitimas' else '' }}">
+        ✅ Legítimas
+        <span class="tab-badge">{{ n_legitimas }}</span>
+    </a>
+    {% if tiene_ground_truth %}
+    <a href="?tab=analisis&pagina=1"
+       class="tab {{ 'tab-activo tab-azul' if tab=='analisis' else '' }}">
+        📊 Análisis de Precisión
+    </a>
+    {% endif %}
+    <a href="?tab=manual&pagina=1"
+       class="tab {{ 'tab-activo tab-morado' if tab=='manual' else '' }}">
+        ✏️ Manual
+        {% if analisis %}
+        <span class="tab-badge">{{ (analisis.fp + analisis.fn) if analisis else 0 }}</span>
+        {% endif %}
+    </a>
+</div>
+
+<!-- ─── ANÁLISIS TP/FP/TN/FN ─────────────────── -->
+{% if tab == 'analisis' and analisis %}
+<div class="card" style="margin-bottom:1rem;">
+    <h3>📊 Resultados vs Realidad</h3>
+    <p style="color:var(--texto-claro);font-size:.875rem;margin-bottom:1rem;">
+        Comparación entre la predicción del modelo y los valores reales (columna <code>fraude</code>).
+    </p>
+    <div class="grid-analisis">
+        <div class="cuadrante cuadrante-tp">
+            <div class="cuadrante-titulo">✅ Verdaderos Positivos</div>
+            <div class="cuadrante-desc">Era fraude y el modelo lo detectó correctamente</div>
+            <div class="cuadrante-valor">{{ analisis.tp }}</div>
+        </div>
+        <div class="cuadrante cuadrante-fp">
+            <div class="cuadrante-titulo">❌ Falsos Positivos</div>
+            <div class="cuadrante-desc">Era legítima pero el modelo dijo que era fraude</div>
+            <div class="cuadrante-valor">{{ analisis.fp }}</div>
+        </div>
+        <div class="cuadrante cuadrante-fn">
+            <div class="cuadrante-titulo">⚠️ Falsos Negativos</div>
+            <div class="cuadrante-desc">Era fraude pero el modelo no lo detectó</div>
+            <div class="cuadrante-valor">{{ analisis.fn }}</div>
+        </div>
+        <div class="cuadrante cuadrante-tn">
+            <div class="cuadrante-titulo">✅ Verdaderos Negativos</div>
+            <div class="cuadrante-desc">Era legítima y el modelo lo confirmó correctamente</div>
+            <div class="cuadrante-valor">{{ analisis.tn }}</div>
+        </div>
+    </div>
+    <div class="metricas-analisis">
+        <span><strong>Precisión:</strong> {{ analisis.precision }}</span>
+        <span><strong>Recall:</strong> {{ analisis.recall }}</span>
+        <span><strong>Total evaluadas:</strong> {{ analisis.tp + analisis.fp + analisis.tn + analisis.fn }}</span>
+    </div>
+</div>
+{% endif %}
+
+<!-- ─── PESTAÑA MANUAL ─────────────────────────── -->
+{% if tab == 'manual' %}
+{% if not tiene_ground_truth %}
+<div class="alerta alerta-error" style="margin-bottom:1rem;">
+    Para usar esta pestaña el CSV debe tener una columna <strong><code>fraude</code></strong>
+    con el valor real (1 = fraude · 0 = legítima).
+</div>
+{% else %}
+<div class="manual-filtros-barra">
+    <a href="?tab=manual&filtro_manual=todos&pagina=1"
+       class="manual-filtro-btn {% if filtro_manual=='todos' %}mf-activo{% endif %}">
+        Todos los errores
+        {% if analisis %}<span class="tab-badge">{{ analisis.fp + analisis.fn }}</span>{% endif %}
+    </a>
+    <a href="?tab=manual&filtro_manual=fn&pagina=1"
+       class="manual-filtro-btn {% if filtro_manual=='fn' %}mf-activo mf-fn{% endif %}">
+        ⚠️ Falsos Negativos
+        {% if analisis %}<span class="tab-badge">{{ analisis.fn }}</span>{% endif %}
+    </a>
+    <a href="?tab=manual&filtro_manual=fp&pagina=1"
+       class="manual-filtro-btn {% if filtro_manual=='fp' %}mf-activo mf-fp{% endif %}">
+        ❌ Falsos Positivos
+        {% if analisis %}<span class="tab-badge">{{ analisis.fp }}</span>{% endif %}
+    </a>
+</div>
+
+{% if tiene_ground_truth %}
+<div style="background:#eff6ff;border-left:3px solid var(--primario);border-radius:8px;
+     padding:.55rem .85rem;margin-bottom:.6rem;font-size:.82rem;color:var(--texto-claro);">
+    💡 Haz clic en cualquier fila — el sistema buscará transacciones similares automáticamente.
+</div>
+<div id="manual-progreso-cont" style="background:var(--gris-claro);border-radius:10px;
+     padding:.75rem 1rem;margin-bottom:1rem;">
+    <div style="font-size:.82rem;font-weight:600;">
+        Progreso de revisión: <strong id="manual-pct">—</strong>
+        · <span id="manual-revisadas">0</span> etiquetadas
+    </div>
+    <div class="barra-progreso-fondo" style="height:8px;margin-top:.35rem;">
+        <div class="barra-progreso-relleno" id="manual-barra" style="width:0%"></div>
+    </div>
+    <p id="manual-aviso-ok" style="display:none;color:var(--verde);
+       font-size:.82rem;margin-top:.4rem;font-weight:600;">
+        ✅ Hay transacciones etiquetadas. Puedes reentrenar el modelo.
+    </p>
+</div>
+{% endif %}
+{% endif %}
+{% endif %}
+
+
+{% if not (tab == 'manual' and not tiene_ground_truth) %}
+<div class="barra-herramientas">
+    <span style="color:var(--texto-claro);font-size:.875rem;">
+        Mostrando {{ total }} registros · Página {{ pagina }}/{{ total_paginas }}
+    </span>
+    <div class="botones-grupo" style="align-items:center;gap:.75rem;">
+        <!-- Selector de filas por página -->
+        <div style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;">
+            <span style="color:var(--texto-claro);">Mostrar:</span>
+            {% for opcion in [("20","20"),("50","50"),("100","100"),("todos","Todos")] %}
+            <a href="?tab={{ tab }}&pagina=1&pp={{ opcion[0] }}&filtro_manual={{ filtro_manual }}"
+               class="btn-pp {{ 'btn-pp-activo' if pp == opcion[0] else '' }}">
+                {{ opcion[1] }}
+            </a>
+            {% endfor %}
+        </div>
+        <a href="{{ url_for('reporte_fraude') }}" class="btn btn-rojo">⬇️ Exportar Fraudes</a>
+    </div>
+</div>
+
+<div class="tabla-scroll-wrap" id="tabla-resultados">
+    {{ tabla | safe }}
+</div>
+
+{% if tab != 'analisis' and tab != 'manual' %}
+<div class="info-marcado">
+    💡 Haz clic en una fila para marcarla como <strong>Verdadero Positivo</strong> o <strong>Falso Positivo</strong>.
+    {% if n_confirmados > 0 %} · <strong>{{ n_confirmados }}</strong> marcadas como confirmadas.{% endif %}
+</div>
+{% endif %}
+
+<div class="paginacion">
+    {% if pagina > 1 %}
+    <a href="?tab={{ tab }}&filtro_manual={{ filtro_manual }}&pagina={{ pagina-1 }}&pp={{ pp }}"
+       class="btn btn-secundario">← Anterior</a>
+    {% endif %}
+    <span>{{ pagina }} / {{ total_paginas }}</span>
+    {% if pagina < total_paginas %}
+    <a href="?tab={{ tab }}&filtro_manual={{ filtro_manual }}&pagina={{ pagina+1 }}&pp={{ pp }}"
+       class="btn btn-secundario">Siguiente →</a>
+    {% endif %}
+</div>
+{% endif %}
+
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL EMERGENTE DE REENTRENAMIENTO
+     Solo se cierra cancelando o cuando termina el proceso
+════════════════════════════════════════════════════════════ -->
+<div id="modal-retrain" class="modal-retrain" style="display:none;">
+    <div class="modal-retrain-caja">
+
+        <!-- Cabecera -->
+        <div class="modal-retrain-header">
+            <div>
+                <h3>🔄 Reentrenar Modelo</h3>
+                <p>El modelo aprenderá de los <strong>{{ n_fraudes }} fraudes detectados</strong>.</p>
+            </div>
+            <div id="header-timer" class="retrain-timer" style="display:none;">
+                <span id="timer-display">0s</span>
+            </div>
+        </div>
+
+        <!-- Opciones paso a paso -->
+        <div id="retrain-opciones">
+
+            <!-- PASO 1: Nombre -->
+            <div class="paso-bloque paso-activo" id="paso-1">
+                <div class="paso-header">
+                    <span class="paso-num paso-num-activo" id="num-1">1</span>
+                    <span class="paso-titulo">Nombre del modelo</span>
+                    <span class="paso-check" id="check-1" style="display:none;">✅</span>
+                </div>
+                <div class="paso-cuerpo">
+                    <input type="text" id="rt-nombre"
+                           placeholder="Ej: modelo_corregido_octubre_2025"
+                           style="width:100%;padding:.6rem .9rem;border:1.5px solid var(--borde);border-radius:8px;font-size:.875rem;">
+                    <p id="nombre-error" style="font-size:.78rem;color:var(--rojo);margin-top:.3rem;display:none;">
+                        ⚠️ Escribe un nombre antes de continuar.
+                    </p>
+                    <button type="button" class="btn btn-primario btn-sm" style="margin-top:.75rem;"
+                            onclick="confirmarPaso(1)">Continuar →</button>
+                </div>
+            </div>
+
+            <!-- PASO 2: Datos a usar -->
+            <div class="paso-bloque paso-bloqueado" id="paso-2">
+                <div class="paso-header">
+                    <span class="paso-num" id="num-2">2</span>
+                    <span class="paso-titulo">Datos para corregir el modelo</span>
+                    <span class="paso-check" id="check-2" style="display:none;">✅</span>
+                </div>
+                <div class="paso-cuerpo" id="cuerpo-2" style="display:none;">
+                    <!-- Cards clickeables — JS maneja la selección -->
+                    <input type="hidden" id="rt_modo_val" value="errores">
+                    <div class="modo-card {% if tiene_ground_truth and analisis and (analisis.fp + analisis.fn) > 0 %}activo-modo{% endif %}"
+                         id="modo-errores"
+                         onclick="selModo('errores', this)"
+                         {% if not tiene_ground_truth or (analisis and (analisis.fp + analisis.fn) == 0) %}
+                         style="opacity:.4;pointer-events:none;"
+                         {% endif %}>
+                        <div class="retrain-badge">⭐ Recomendado</div>
+                        <strong>Correctivo — Falsos Positivos y Falsos Negativos</strong>
+                        <p class="retrain-detalle">
+                            {% if tiene_ground_truth and analisis %}
+                            <span class="conteo-fp">FP: {{ analisis.fp }}</span>
+                            <span class="conteo-fn" style="margin-left:.5rem;">FN: {{ analisis.fn }}</span>
+                            {% else %}
+                            Requiere columna <code>fraude</code> con el valor real.
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="modo-card {% if not (tiene_ground_truth and analisis and (analisis.fp + analisis.fn) > 0) %}activo-modo{% endif %}"
+                         id="modo-detectados"
+                         onclick="selModo('detectados', this)"
+                         {% if n_fraudes == 0 %}style="opacity:.4;pointer-events:none;"{% endif %}>
+                        <strong>Todos los fraudes detectados ({{ n_fraudes }})</strong>
+                        <p class="retrain-detalle">Agrega todo lo que el modelo marcó como fraude.</p>
+                    </div>
+                    <button class="btn btn-primario btn-sm" style="margin-top:.75rem;"
+                            onclick="confirmarPaso(2)">Continuar →</button>
+                </div>
+            </div>
+
+            <!-- PASO 3: Complejidad -->
+            <div class="paso-bloque paso-bloqueado" id="paso-3">
+                <div class="paso-header">
+                    <span class="paso-num" id="num-3">3</span>
+                    <span class="paso-titulo">Complejidad del entrenamiento</span>
+                    <span class="paso-check" id="check-3" style="display:none;">✅</span>
+                </div>
+                <div class="paso-cuerpo" id="cuerpo-3" style="display:none;">
+                    <div class="complejidad-opciones" id="comp-grid">
+                        <div class="comp-card" id="comp-rapido"
+                             onclick="selComplejidad('rapido')">
+                            <div class="comp-titulo">Rápido</div>
+                            <div class="comp-desc">150 árboles · 30k filas<br>~1-2 min · ~350 MB</div>
+                        </div>
+                        <div class="comp-card comp-recomendado activo-comp" id="comp-balanceado"
+                             onclick="selComplejidad('balanceado')">
+                            <div class="comp-titulo">Balanceado ⭐</div>
+                            <div class="comp-desc">250 árboles · 80k filas<br>~3-4 min · ~800 MB</div>
+                        </div>
+                        <div class="comp-card" id="comp-completo"
+                             onclick="selComplejidad('completo')">
+                            <div class="comp-titulo">Completo</div>
+                            <div class="comp-desc">400 árboles · 200k filas<br>~5-8 min · ~1.3 GB</div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="rt_complejidad_val" value="balanceado">
+                    <button class="btn btn-primario btn-sm" style="margin-top:.75rem;"
+                            onclick="confirmarPaso(3)">Continuar →</button>
+                </div>
+            </div>
+
+            <!-- PASO 4: Datasets adicionales -->
+            <div class="paso-bloque paso-bloqueado" id="paso-4">
+                <div class="paso-header">
+                    <span class="paso-num" id="num-4">4</span>
+                    <span class="paso-titulo">Datasets adicionales <span style="font-weight:400;color:var(--texto-claro);">(opcional)</span></span>
+                    <span class="paso-check" id="check-4" style="display:none;">✅</span>
+                </div>
+                <div class="paso-cuerpo" id="cuerpo-4" style="display:none;">
+                    <div id="rt-db-lista" class="rt-db-lista">
+                        <div style="color:var(--texto-claro);font-size:.85rem;">Cargando...</div>
+                    </div>
+                    <p style="font-size:.78rem;color:var(--texto-claro);margin-top:.5rem;">
+                        Selecciona archivos del Database para incluirlos en el entrenamiento.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Botones finales -->
+            <div class="modal-retrain-footer solo-cancelar" style="margin-top:1rem;">
+                <button class="btn btn-reentrenar" id="btn-iniciar-retrain"
+                        onclick="lanzarReentrenamiento()">
+                    Iniciar reentrenamiento
+                </button>
+                <button class="btn btn-secundario" onclick="cerrarModalRetrain()">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- Progreso (visible mientras entrena) -->
+        <div id="retrain-en-progreso" style="display:none;">
+            <div class="progreso-header">
+                <span id="progreso-pct">0%</span>
+                <span style="font-size:.8rem;color:var(--texto-claro);">No cierres esta ventana</span>
+            </div>
+            <div class="barra-progreso-fondo">
+                <div class="barra-progreso-relleno" id="barra-relleno" style="width:0%"></div>
+            </div>
+            <div class="progreso-log" id="progreso-log"></div>
+
+            <div class="modal-retrain-footer">
+                <button class="btn btn-rojo" onclick="cancelarReentrenamiento()">✕ Cancelar proceso</button>
+            </div>
+        </div>
+
+        <!-- Resultado final (visible al terminar) -->
+        <div id="retrain-resultado-modal" style="display:none;"></div>
+
+    </div>
+</div>
+
+
+{% if n_fraudes > 0 %}
+<div class="retrain-bottom">
+    <div class="retrain-bottom-info">
+        <span class="retrain-bottom-icono">🔄</span>
+        <div>
+            <strong>¿Quieres mejorar el modelo?</strong>
+            <p>Reentrenalo con los <strong>{{ n_fraudes }} fraudes detectados</strong> para que aprenda de ellos.</p>
+        </div>
+    </div>
+    <button class="btn btn-reentrenar" onclick="abrirModalRetrain()">
+        🔄 Reentrenar Modelo
+    </button>
+</div>
+{% else %}
+<div class="retrain-bottom retrain-bottom-vacio">
+    <div class="retrain-bottom-info">
+        <span class="retrain-bottom-icono">🔄</span>
+        <div>
+            <strong>Reentrenar Modelo</strong>
+            <p>No se detectaron fraudes en este análisis. Puedes reentrenar igualmente con datos anteriores acumulados.</p>
+        </div>
+    </div>
+    <button class="btn btn-reentrenar" onclick="abrirModalRetrain()">
+        🔄 Reentrenar Modelo
+    </button>
+</div>
+{% endif %}
+
+<!-- Modal marcación + similares -->
+<div id="modal-marcar" class="modal" style="display:none;align-items:center;justify-content:center;">
+    <div style="background:var(--blanco);border-radius:16px;padding:1.75rem;
+                width:100%;max-width:620px;max-height:90vh;overflow-y:auto;
+                box-shadow:0 25px 80px rgba(0,0,0,.35);animation:slideUp .25s ease;">
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <h3>Marcar transacción y similares</h3>
+            <span id="mm-badge" style="display:none;background:var(--primario);color:white;
+                border-radius:20px;padding:.2rem .65rem;font-size:.75rem;font-weight:700;"></span>
+        </div>
+
+        <!-- Info fila seleccionada -->
+        <div id="mm-referencia" style="background:var(--gris-claro);border-radius:8px;
+             padding:.65rem .9rem;margin-bottom:1rem;font-size:.875rem;
+             border-left:3px solid var(--primario);">
+        </div>
+
+        <!-- Similares -->
+        <div id="mm-similares-sec" style="display:none;margin-bottom:1rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                        margin-bottom:.5rem;font-size:.875rem;">
+                <span id="mm-similares-count"></span>
+                <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;
+                               font-size:.82rem;color:var(--texto-claro);">
+                    <input type="checkbox" id="mm-check-todas" checked
+                           onchange="toggleTodasSimilares(this.checked)">
+                    Incluir todas las similares
+                </label>
+            </div>
+            <div id="mm-similares-preview"
+                 style="max-height:150px;overflow-y:auto;border:1px solid var(--borde);
+                        border-radius:8px;font-size:.75rem;"></div>
+        </div>
+
+        <!-- Progreso revisión -->
+        <div id="mm-progreso-revision" style="display:none;background:var(--gris-claro);
+             border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;">
+            <div style="font-size:.82rem;font-weight:600;margin-bottom:.35rem;">
+                Revisión manual: <span id="mm-pct-revision">0%</span>
+                (<span id="mm-n-revisadas">0</span> de <span id="mm-n-errores">0</span> errores)
+            </div>
+            <div class="barra-progreso-fondo" style="height:8px;">
+                <div class="barra-progreso-relleno" id="mm-barra-rev" style="width:0%"></div>
+            </div>
+            <p id="mm-aviso-reentrenar" style="display:none;font-size:.78rem;
+               color:var(--verde);margin-top:.3rem;font-weight:600;">
+                ✅ Ya puedes reentrenar el modelo con las etiquetas revisadas.
+            </p>
+        </div>
+
+        <!-- Acciones -->
+        <div style="border-top:1px solid var(--borde);padding-top:1rem;">
+            <p style="font-size:.85rem;color:var(--texto-claro);margin-bottom:.6rem;">
+                ¿Cómo clasificar esta transacción y sus similares?
+            </p>
+            <div class="botones-grupo">
+                <button onclick="marcarConSimilares('verdadero_positivo')" class="btn btn-rojo">
+                    ⚠️ Verdadero Positivo — es fraude real
+                </button>
+                <button onclick="marcarConSimilares('falso_positivo')" class="btn btn-verde">
+                    ✅ Falso Positivo — era legítima
+                </button>
+            </div>
+            <button onclick="cerrarModal()" class="btn btn-secundario"
+                    style="margin-top:.75rem;width:100%;">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+// ── Marcación con similares ─────────────────────────────────────────────────
+let indiceSeleccionado = null;
+let indicesSimilares   = [];
+let _simCache          = [];
+
+// Mapa: índice real DataFrame → <tr> en la tabla visible
+// Mapa de índices ya marcados, inyectado desde el servidor
+const MARCADOS_SERVER = {{ marcados_idx | tojson }};
+
+// La columna _idx (primera, oculta con CSS) contiene el índice real del DataFrame
+const filasPorIdx = {};
+const tbody       = document.querySelector("#tabla-resultados tbody");
+
+document.querySelectorAll("#tabla-resultados tbody tr").forEach(fila => {
+    const tdIdx = fila.querySelector("td:first-child");
+    if (!tdIdx) return;
+    const idxReal = parseInt(tdIdx.textContent.trim(), 10);
+    if (isNaN(idxReal)) return;
+    fila.dataset.idx     = idxReal;
+    filasPorIdx[idxReal] = fila;
+    fila.style.cursor    = "pointer";
+    fila.addEventListener("click", () => {
+        const idx = parseInt(fila.dataset.idx, 10);
+        if (!isNaN(idx)) abrirModal(idx, fila);
+    });
+});
+
+// Colorear y ordenar filas al cargar:
+//   - Marcadas → fondo de color, se mueven al final
+//   - Sin marcar → quedan arriba
+function colorearFila(fila, tipo) {
+    // Colorea todas las celdas de la fila para que el color sea visible
+    const bg    = tipo === "verdadero_positivo" ? "#ffd6d6" : "#d6f5d6";
+    const borde = tipo === "verdadero_positivo" ? "#f5a0a0" : "#a0d8a0";
+    const label = tipo === "verdadero_positivo" ? "✔ Fraude real" : "✔ Legítima";
+    fila.querySelectorAll("td").forEach(td => {
+        td.style.backgroundColor = bg;
+        td.style.borderBottom    = `1px solid ${borde}`;
+    });
+    fila.title = label;
+}
+
+function aplicarColoresYOrden() {
+    if (!tbody) return;
+    const filasMarcadas = [];
+    const filasLibres   = [];
+
+    Object.entries(MARCADOS_SERVER).forEach(([idxStr, tipo]) => {
+        const fila = filasPorIdx[parseInt(idxStr, 10)];
+        if (!fila) return;
+        colorearFila(fila, tipo);
+        filasMarcadas.push(fila);
+    });
+
+    // Separar las no marcadas
+    Array.from(tbody.querySelectorAll("tr")).forEach(fila => {
+        const idx = parseInt(fila.dataset.idx, 10);
+        if (isNaN(idx)) return;
+        if (!(idx in MARCADOS_SERVER)) filasLibres.push(fila);
+    });
+
+    // Reordenar: libres arriba, marcadas abajo
+    [...filasLibres, ...filasMarcadas].forEach(fila => tbody.appendChild(fila));
+}
+
+aplicarColoresYOrden();
+
+function abrirModal(idxReal, filaEl) {
+    indiceSeleccionado = idxReal;
+    indicesSimilares   = [];
+    _simCache          = [];
+
+    document.getElementById("modal-marcar").style.display = "flex";
+    document.getElementById("mm-similares-sec").style.display = "none";
+    const ck = document.getElementById("mm-check-todas");
+    if (ck) ck.checked = true;
+
+    // Mostrar datos de la fila (saltar primera celda _idx oculta)
+    const celdas = Array.from(filaEl.querySelectorAll("td")).slice(1, 7);
+    const texto  = celdas.map(c => c.textContent.trim()).filter(Boolean).join(" · ");
+    document.getElementById("mm-referencia").innerHTML =
+        `<strong>Transacción:</strong>
+         <span style="color:var(--texto-claro);font-size:.82rem;">${texto}</span>`;
+
+    // Buscar similares
+    fetch("/marcar/similares", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({indice: idxReal})
+    }).then(r => r.json()).then(d => {
+        if (d.ok && d.n > 0) {
+            indicesSimilares = d.indices;
+            _simCache        = [...d.indices];
+            document.getElementById("mm-similares-sec").style.display = "block";
+            document.getElementById("mm-similares-count").innerHTML =
+                `<strong>${d.n}</strong> transacciones similares encontradas
+                 (prob. ±10% · mismas características clave)`;
+            if (d.preview)
+                document.getElementById("mm-similares-preview").innerHTML = d.preview;
+            // Borde naranja en similares visibles
+            d.indices.forEach(i => {
+                if (filasPorIdx[i]) filasPorIdx[i].style.outline = "2px solid #f59e0b";
+            });
+        }
+    });
+
+    actualizarProgreso();
+}
+
+function toggleTodasSimilares(checked) {
+    if (!checked) {
+        indicesSimilares = [];
+        _simCache.forEach(i => { if (filasPorIdx[i]) filasPorIdx[i].style.outline = ""; });
+    } else {
+        indicesSimilares = [..._simCache];
+        _simCache.forEach(i => { if (filasPorIdx[i]) filasPorIdx[i].style.outline = "2px solid #f59e0b"; });
+    }
+}
+
+function cerrarModal() {
+    _simCache.forEach(i => { if (filasPorIdx[i]) filasPorIdx[i].style.outline = ""; });
+    document.getElementById("modal-marcar").style.display = "none";
+    indiceSeleccionado = null; indicesSimilares = []; _simCache = [];
+}
+
+// Índice de la columna etiqueta_usuario en la tabla (se detecta una vez al cargar)
+let _colIdxEtiqueta = -1;
+(function detectarColumnaEtiqueta() {
+    const ths = document.querySelectorAll("#tabla-resultados thead th");
+    ths.forEach((th, i) => {
+        if (th.textContent.trim() === "etiqueta_usuario") _colIdxEtiqueta = i;
+    });
+})();
+
+function actualizarCeldaEtiqueta(fila, tipo) {
+    if (_colIdxEtiqueta < 0) return;
+    const celdas = fila.querySelectorAll("td");
+    if (celdas[_colIdxEtiqueta]) {
+        const label = tipo === "verdadero_positivo" ? "✔ Fraude (1)" : "✔ Legítima (0)";
+        celdas[_colIdxEtiqueta].textContent = label;
+        celdas[_colIdxEtiqueta].style.fontWeight = "700";
+    }
+}
+
+function marcarConSimilares(tipo) {
+    if (indiceSeleccionado === null) return;
+    const incluir = document.getElementById("mm-check-todas")?.checked ?? true;
+    const todos   = incluir ? [indiceSeleccionado, ...indicesSimilares] : [indiceSeleccionado];
+
+    fetch("/marcar/lote", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({indices: todos, marcacion: tipo})
+    }).then(r => r.json()).then(d => {
+        cerrarModal();
+        if (d.ok) {
+            location.reload();
+        } else {
+            mostrarToast(d.msg, "error");
+        }
+    });
+}
+
+function actualizarProgreso() {
+    fetch("/marcar/estado_revision").then(r => r.json()).then(d => {
+        // Modal
+        const sec = document.getElementById("mm-progreso-revision");
+        if (sec && d.total_errores > 0) {
+            sec.style.display = "block";
+            document.getElementById("mm-pct-revision").textContent = d.pct_revision + "%";
+            document.getElementById("mm-n-revisadas").textContent  = d.revisadas;
+            document.getElementById("mm-n-errores").textContent    = d.total_errores;
+            document.getElementById("mm-barra-rev").style.width    = d.pct_revision + "%";
+            const av = document.getElementById("mm-aviso-reentrenar");
+            if (av) av.style.display = d.puede_reentrenar ? "block" : "none";
+        }
+        const badge = document.getElementById("mm-badge");
+        if (badge && d.revisadas > 0) {
+            badge.style.display = "inline-block";
+            badge.textContent   = `${d.revisadas} revisadas`;
+        }
+        // Barra en pestaña Manual
+        const bm = document.getElementById("manual-barra");
+        if (bm) {
+            bm.style.width = d.pct_revision + "%";
+            const pe = document.getElementById("manual-pct");
+            const re = document.getElementById("manual-revisadas");
+            if (pe) pe.textContent = d.total_errores > 0 ? d.pct_revision + "%" : "—";
+            if (re) re.textContent = d.revisadas;
+            const av2 = document.getElementById("manual-aviso-ok");
+            if (av2) av2.style.display = d.puede_reentrenar ? "block" : "none";
+        }
+    });
+}
+
+document.addEventListener("DOMContentLoaded", actualizarProgreso);
+
+document.getElementById("modal-marcar")?.addEventListener("click", e => {
+    if (e.target === document.getElementById("modal-marcar")) cerrarModal();
+});
+
+
+// ── Modal de reentrenamiento ────────────────────────────────────────────────
+let jobId     = null;
+let timerSeg  = 0;
+let timerIntv = null;
+let pollIntv  = null;
+let cancelado = false;
+
+function abrirModalRetrain() {
+    // Resetear estado
+    cancelado = false;
+    jobId     = null;
+    document.getElementById("retrain-opciones").style.display        = "block";
+    document.getElementById("retrain-en-progreso").style.display     = "none";
+    document.getElementById("retrain-resultado-modal").style.display = "none";
+    document.getElementById("header-timer").style.display            = "none";
+    document.getElementById("barra-relleno").style.width             = "0%";
+    document.getElementById("progreso-pct").textContent              = "0%";
+    document.getElementById("progreso-log").innerHTML                = "";
+    document.getElementById("modal-retrain").style.display           = "flex";
+}
+
+function cerrarModalRetrain() {
+    // Solo permitido si no hay proceso en curso
+    if (jobId && pollIntv) {
+        mostrarToast("Usa el botón 'Cancelar proceso' para detener el reentrenamiento.", "error");
+        return;
+    }
+    document.getElementById("modal-retrain").style.display = "none";
+}
+
+function cancelarReentrenamiento() {
+    cancelado = true;
+    clearInterval(pollIntv);
+    clearInterval(timerIntv);
+    pollIntv = null;
+    jobId    = null;
+    document.getElementById("modal-retrain").style.display = "none";
+    mostrarToast("Reentrenamiento cancelado.", "error");
+}
+
+// Cargar lista de databases al abrir el modal
+function abrirModalRetrain() {
+    cancelado = false; jobId = null;
+    // Reset secciones
+    document.getElementById("retrain-opciones").style.display        = "block";
+    document.getElementById("retrain-en-progreso").style.display     = "none";
+    document.getElementById("retrain-resultado-modal").style.display = "none";
+    document.getElementById("header-timer").style.display            = "none";
+    document.getElementById("barra-relleno").style.width             = "0%";
+    document.getElementById("progreso-pct").textContent              = "0%";
+    document.getElementById("progreso-log").innerHTML                = "";
+    if (document.getElementById("rt-nombre"))
+        document.getElementById("rt-nombre").value = "";
+    // Reset pasos
+    resetPasos();
+    document.getElementById("modal-retrain").style.display = "flex";
+}
+
+function resetPasos() {
+    for (let i = 1; i <= 4; i++) {
+        const bloque = document.getElementById(`paso-${i}`);
+        const cuerpo = document.getElementById(`cuerpo-${i}`);
+        const check  = document.getElementById(`check-${i}`);
+        const num    = document.getElementById(`num-${i}`);
+        if (!bloque) continue;
+        bloque.classList.remove("paso-activo", "paso-completado");
+        bloque.classList.add(i === 1 ? "paso-activo" : "paso-bloqueado");
+        if (cuerpo) cuerpo.style.display = i === 1 ? "block" : "none";
+        if (check)  check.style.display  = "none";
+        if (num)    num.classList.remove("paso-num-activo", "paso-num-done");
+        if (i === 1 && num) num.classList.add("paso-num-activo");
+    }
+    document.getElementById("btn-iniciar-retrain").disabled = true;
+}
+
+function activarPaso(n) {
+    // Activa visualmente el paso n si no está ya activo/completado
+    const bloque = document.getElementById(`paso-${n}`);
+    if (!bloque) return;
+    if (bloque.classList.contains("paso-bloqueado")) {
+        bloque.classList.remove("paso-bloqueado");
+        bloque.classList.add("paso-activo");
+        const cuerpo = document.getElementById(`cuerpo-${n}`);
+        if (cuerpo) cuerpo.style.display = "block";
+        const num = document.getElementById(`num-${n}`);
+        if (num) num.classList.add("paso-num-activo");
+    }
+}
+
+function confirmarPaso(n) {
+    if (n === 1) {
+        const nombre = document.getElementById("rt-nombre").value.trim();
+        if (!nombre) {
+            document.getElementById("nombre-error").style.display = "block";
+            document.getElementById("rt-nombre").style.borderColor = "var(--rojo)";
+            return;
+        }
+        document.getElementById("nombre-error").style.display = "none";
+        document.getElementById("rt-nombre").style.borderColor = "var(--verde)";
+    }
+    const bloque = document.getElementById(`paso-${n}`);
+    const check  = document.getElementById(`check-${n}`);
+    const num    = document.getElementById(`num-${n}`);
+    if (bloque) { bloque.classList.remove("paso-activo"); bloque.classList.add("paso-completado"); }
+    if (check)  check.style.display = "inline";
+    if (num)    { num.classList.remove("paso-num-activo"); num.classList.add("paso-num-done"); }
+
+    // Activar siguiente paso
+    if (n < 4) {
+        activarPaso(n + 1);
+        if (n + 1 === 4) cargarDatabaseEnModal();
+    }
+    // Habilitar botón iniciar
+    document.getElementById("btn-iniciar-retrain").disabled = false;
+}
+
+function cargarDatabaseEnModal() {
+    // solo_revisados=1 → solo datasets con revisión manual 100% completa
+    fetch("/database/json?solo_revisados=1")
+    .then(r => r.json())
+    .then(data => {
+        const cont = document.getElementById("rt-db-lista");
+        if (!cont) return;
+        if (!data.archivos || data.archivos.length === 0) {
+            cont.innerHTML = `
+                <p style="color:var(--texto-claro);font-size:.85rem;">
+                    No hay datasets con revisión completa aún.<br>
+                    <span style="font-size:.78rem;">Ve al Historial, carga un análisis
+                    y completa la revisión manual en la pestaña Manual.</span>
+                </p>`;
+            return;
+        }
+        cont.innerHTML = data.archivos.map(a => `
+            <label class="db-check-item">
+                <input type="checkbox" name="rt_db" value="${a.nombre}">
+                <span>
+                    <strong>${a.nombre_orig || a.nombre}</strong>
+                    <span style="color:var(--texto-claro);font-size:.78rem;">
+                        · ${(a.filas||0).toLocaleString()} filas
+                        · ${a.fecha||''}
+                    </span>
+                    <span style="color:var(--verde);font-size:.75rem;font-weight:700;">
+                        ✅ Revisión completa
+                    </span>
+                </span>
+            </label>
+        `).join("");
+    }).catch(() => {
+        const cont = document.getElementById("rt-db-lista");
+        if (cont) cont.innerHTML = '<p style="color:var(--texto-claro);font-size:.85rem;">No hay archivos disponibles.</p>';
+    });
+}
+
+function selModo(val, el) {
+    document.querySelectorAll('.modo-card').forEach(c => c.classList.remove('activo-modo'));
+    el.classList.add('activo-modo');
+    document.getElementById('rt_modo_val').value = val;
+}
+
+function selComplejidad(val) {
+    document.querySelectorAll('.comp-card').forEach(c => c.classList.remove('activo-comp'));
+    const el = document.getElementById('comp-' + val);
+    if (el) el.classList.add('activo-comp');
+    document.getElementById('rt_complejidad_val').value = val;
+}
+
+function lanzarReentrenamiento() {
+    const nombre = document.getElementById("rt-nombre").value.trim();
+    if (!nombre) {
+        document.getElementById("nombre-error").style.display = "block";
+        document.getElementById("rt-nombre").style.borderColor = "var(--rojo)";
+        // Scroll al paso 1
+        document.getElementById("paso-1").scrollIntoView({behavior:"smooth"});
+        return;
+    }
+    const modo        = document.getElementById('rt_modo_val')?.value || "detectados";
+    const complejidad = document.getElementById('rt_complejidad_val')?.value || "balanceado";
+    const datasets    = [...document.querySelectorAll('input[name="rt_db"]:checked')].map(i => i.value);
+    iniciarReentrenamiento(modo, complejidad, nombre, datasets);
+}
+
+function iniciarReentrenamiento(modo, complejidad, nombre, datasets) {
+    // Ocultar opciones, mostrar progreso
+    document.getElementById("retrain-opciones").style.display    = "none";
+    document.getElementById("retrain-en-progreso").style.display = "block";
+    document.getElementById("header-timer").style.display        = "flex";
+
+    // Iniciar timer
+    timerSeg = 0;
+    clearInterval(timerIntv);
+    timerIntv = setInterval(() => {
+        timerSeg++;
+        document.getElementById("timer-display").textContent = timerSeg + "s";
+    }, 1000);
+
+    const formData = new FormData();
+    formData.append("modo",        modo);
+    formData.append("complejidad", complejidad || "balanceado");
+    formData.append("nombre_modelo", nombre || "");
+    (datasets || []).forEach(d => formData.append("datasets", d));
+
+    fetch("/reentrenar/iniciar", {method: "POST", body: formData})
+    .then(r => r.json())
+    .then(data => {
+        if (!data.ok) {
+            clearInterval(timerIntv);
+            mostrarResultadoModal({ok: false, mensaje: data.msg}, {});
+            return;
+        }
+        jobId = data.job_id;
+        pollIntv = setInterval(consultarEstado, 800);
+    })
+    .catch(() => {
+        clearInterval(timerIntv);
+        mostrarResultadoModal({ok: false, mensaje: "Error de conexión."}, {});
+    });
+}
+
+function consultarEstado() {
+    if (!jobId || cancelado) return;
+
+    fetch("/reentrenar/estado/" + jobId)
+    .then(r => r.json())
+    .then(data => {
+        if (!data.ok || cancelado) return;
+
+        // Actualizar barra
+        document.getElementById("barra-relleno").style.width = data.progreso + "%";
+        document.getElementById("progreso-pct").textContent  = data.progreso + "%";
+
+        // Log
+        const log = document.getElementById("progreso-log");
+        log.innerHTML = data.mensajes.map((m, i) =>
+            `<div class="log-linea ${i === data.mensajes.length-1 ? 'log-activo' : ''}">${m}</div>`
+        ).join("");
+        log.scrollTop = log.scrollHeight;
+
+        if (data.terminado) {
+            clearInterval(pollIntv);
+            clearInterval(timerIntv);
+            pollIntv = null;
+            mostrarResultadoModal(data.resultado, data);
+        }
+    });
+}
+
+function mostrarResultadoModal(res, data) {
+    document.getElementById("retrain-en-progreso").style.display     = "none";
+    document.getElementById("retrain-resultado-modal").style.display = "block";
+
+    const sec = document.getElementById("retrain-resultado-modal");
+
+    if (!res || !res.ok) {
+        sec.innerHTML = `
+            <div class="resultado-error">
+                <div class="resultado-icono">❌</div>
+                <h4>Error en el reentrenamiento</h4>
+                <p>${res ? res.mensaje : "Error desconocido."}</p>
+                <button class="btn btn-secundario" onclick="cerrarModalRetrain()">Cerrar</button>
+            </div>`;
+        jobId = null;
+        return;
+    }
+
+    const ant     = res.metricas_anteriores || {};
+    const nvo     = res.metricas_nuevas     || {};
+    const diffRoc = (nvo.roc_auc && ant.roc_auc) ? (nvo.roc_auc - ant.roc_auc) : null;
+    const diffPr  = (nvo.pr_auc  && ant.pr_auc)  ? (nvo.pr_auc  - ant.pr_auc)  : null;
+
+    const fmtDiff = (d) => d === null ? "" :
+        `<span class="diff ${d >= 0 ? 'diff-pos' : 'diff-neg'}">${d >= 0 ? '▲' : '▼'} ${Math.abs(d).toFixed(4)}</span>`;
+
+    sec.innerHTML = `
+        <div class="resultado-exito">
+            <div class="resultado-icono-ok">✅</div>
+            <h4>Modelo actualizado correctamente</h4>
+            <p style="color:var(--texto-claro);font-size:.875rem;">
+                Tiempo total: <strong>${timerSeg}s</strong> ·
+                Fraudes usados: <strong>${res.n_nuevos_fraudes_usados || "—"}</strong> ·
+                Total en entrenamiento: <strong>${res.n_total_entrenamiento || "—"}</strong>
+            </p>
+
+            <!-- Rutas del modelo -->
+            <div class="rutas-modelo">
+                <div class="ruta-item">
+                    <span class="ruta-label">📁 Nuevo modelo guardado en:</span>
+                    <code>${data.ruta_nuevo || "—"}</code>
+                </div>
+                <div class="ruta-item">
+                    <span class="ruta-label">💾 Backup del modelo anterior en:</span>
+                    <code>${data.ruta_backup || "—"}</code>
+                </div>
+            </div>
+
+            <!-- Comparación métricas -->
+            <div class="comparacion-mini">
+                <div class="comp-col">
+                    <div class="comp-titulo">Modelo anterior</div>
+                    <div>ROC AUC: <strong>${ant.roc_auc ? ant.roc_auc.toFixed(4) : "—"}</strong></div>
+                    <div>PR AUC:  <strong>${ant.pr_auc  ? ant.pr_auc.toFixed(4)  : "—"}</strong></div>
+                </div>
+                <div class="comp-flecha">→</div>
+                <div class="comp-col comp-nuevo">
+                    <div class="comp-titulo">Modelo nuevo</div>
+                    <div>ROC AUC: <strong>${nvo.roc_auc ? nvo.roc_auc.toFixed(4) : "—"}</strong> ${fmtDiff(diffRoc)}</div>
+                    <div>PR AUC:  <strong>${nvo.pr_auc  ? nvo.pr_auc.toFixed(4)  : "—"}</strong> ${fmtDiff(diffPr)}</div>
+                </div>
+            </div>
+
+            <div class="botones-grupo" style="margin-top:1.25rem;">
+                <a href="/metricas" class="btn btn-primario">Ver métricas completas</a>
+                <button onclick="restaurarModelo()" class="btn btn-secundario">↩️ Restaurar anterior</button>
+                <button onclick="cerrarModalRetrain()" class="btn btn-secundario">✕ Cerrar</button>
+            </div>
+        </div>`;
+
+    jobId = null;  // Ya terminó, ahora sí se puede cerrar
+}
+
+function restaurarModelo() {
+    if (!confirm("¿Restaurar el modelo anterior?")) return;
+    fetch("/reentrenar/restaurar", {method: "POST"})
+    .then(r => r.json())
+    .then(data => mostrarToast(data.msg, data.ok ? "exito" : "error"));
+}
+
+// ── Pestaña Manual ─────────────────────────────────────────────────────────
+function cargarManual(tipo) {
+    fetch("/resultados/errores_json")
+    .then(r => r.json())
+    .then(data => {
+        if (!data.ok) return;
+        const cont = document.getElementById("tabla-manual-contenido");
+        // Activar botón seleccionado
+        document.querySelectorAll('.manual-btn').forEach(b => b.classList.remove('activo-manual'));
+        const btnId = tipo === 'fn' ? 'btn-fn-m' : tipo === 'fp' ? 'btn-fp-m' : 'btn-todos-m';
+        document.getElementById(btnId)?.classList.add('activo-manual');
+        if (tipo === "fn") {
+            cont.innerHTML = data.n_fn > 0 ? data.fn
+                : '<p style="padding:1rem;color:var(--texto-claro);text-align:center;">No hay Falsos Negativos.</p>';
+        } else if (tipo === "fp") {
+            cont.innerHTML = data.n_fp > 0 ? data.fp
+                : '<p style="padding:1rem;color:var(--texto-claro);text-align:center;">No hay Falsos Positivos.</p>';
+        } else {
+            // todos
+            let html = '';
+            if (data.n_fn > 0) html += `<div style="padding:.5rem .75rem;background:#fefce8;font-weight:600;font-size:.85rem;">⚠️ Falsos Negativos (${data.n_fn})</div>` + data.fn;
+            if (data.n_fp > 0) html += `<div style="padding:.5rem .75rem;background:#fef2f2;font-weight:600;font-size:.85rem;margin-top:.5rem;">❌ Falsos Positivos (${data.n_fp})</div>` + data.fp;
+            cont.innerHTML = html || '<p style="padding:1rem;text-align:center;">Sin errores.</p>';
+        }
+    });
+}
+
+function mostrarToast(msg, tipo) {
+    const t = document.createElement("div");
+    t.textContent = msg;
+    t.style.cssText = `position:fixed;bottom:1.5rem;right:1.5rem;padding:.75rem 1.25rem;
+        border-radius:10px;font-size:.9rem;color:white;z-index:99999;
+        background:${tipo === "exito" ? "#16a34a" : "#dc2626"};
+        box-shadow:0 4px 16px rgba(0,0,0,.25);`;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+}
+</script>
+{% endblock %}

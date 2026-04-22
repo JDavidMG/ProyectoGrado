@@ -1,0 +1,160 @@
+<!-- templates/metricas.html -->
+{% extends "base.html" %}
+{% block titulo %}Métricas - FraudeDetect{% endblock %}
+
+{% block contenido %}
+<div class="pagina-header">
+    <h2>Métricas y Evaluación del Modelo</h2>
+    <p>Selecciona un modelo para ver sus gráficas y métricas.</p>
+</div>
+
+<!-- Selector de modelos -->
+<div class="card" style="margin-bottom:1.5rem;">
+    <h3>Seleccionar modelo</h3>
+    <div class="metricas-selector" style="margin-top:.75rem;">
+        {% for m in modelos %}
+        <a href="{{ url_for('ver_metricas', modelo=m.nombre) }}"
+           class="metrica-modelo-btn {{ 'metrica-modelo-activo' if m.nombre == modelo_sel else '' }}">
+            <span class="metrica-modelo-icono">{{ '🏛️' if m.es_original else '🔧' }}</span>
+            <span class="metrica-modelo-nombre">{{ m.label }}</span>
+            <span class="metrica-modelo-meta">{{ m.tamaño }} · {{ m.fecha }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+{% if modelo_sel %}
+
+<!-- Métricas numéricas -->
+<div class="tarjetas-grid">
+    <div class="tarjeta tarjeta-azul">
+        <div class="tarjeta-icono">🎯</div>
+        <div class="tarjeta-info">
+            <div class="tarjeta-valor">{{ "%.4f"|format(metricas.roc_auc) if metricas.roc_auc else "—" }}</div>
+            <div class="tarjeta-label">ROC AUC</div>
+        </div>
+    </div>
+    <div class="tarjeta tarjeta-verde">
+        <div class="tarjeta-icono">📈</div>
+        <div class="tarjeta-info">
+            <div class="tarjeta-valor">{{ "%.4f"|format(metricas.pr_auc) if metricas.pr_auc else "—" }}</div>
+            <div class="tarjeta-label">PR AUC</div>
+        </div>
+    </div>
+    {% if metricas.classification_report %}
+    <div class="tarjeta tarjeta-naranja">
+        <div class="tarjeta-icono">✅</div>
+        <div class="tarjeta-info">
+            <div class="tarjeta-valor">{{ "%.4f"|format(metricas.classification_report.accuracy) }}</div>
+            <div class="tarjeta-label">Accuracy</div>
+        </div>
+    </div>
+    <div class="tarjeta tarjeta-rojo">
+        <div class="tarjeta-icono">🔍</div>
+        <div class="tarjeta-info">
+            <div class="tarjeta-valor">
+                {{ "%.4f"|format(metricas.classification_report['1']['f1-score'])
+                   if metricas.classification_report.get('1') else "—" }}
+            </div>
+            <div class="tarjeta-label">F1-Score Fraude</div>
+        </div>
+    </div>
+    <div class="tarjeta tarjeta-azul">
+        <div class="tarjeta-icono">🎯</div>
+        <div class="tarjeta-info">
+            <div class="tarjeta-valor">
+                {{ "%.4f"|format(especificidad) if especificidad else "—" }}
+            </div>
+            <div class="tarjeta-label">Especificidad (TN Rate)</div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Tabla por clase -->
+{% if metricas.classification_report %}
+<div class="card" style="margin-top:1rem;">
+    <h3>Reporte por clase — {{ modelo_sel }}</h3>
+    {% if metricas.reentrenado_el %}
+    <p style="color:var(--texto-claro);font-size:.8rem;margin-bottom:.75rem;">
+        Entrenado el {{ metricas.reentrenado_el }}
+        {% if metricas.complejidad %} · Complejidad: {{ metricas.complejidad }}{% endif %}
+        {% if metricas.n_errores_incorporados %} · {{ metricas.n_errores_incorporados }} errores incorporados{% endif %}
+    </p>
+    {% endif %}
+    <table class="tabla-metricas">
+        <thead>
+            <tr><th>Clase</th><th>Precisión</th><th>Recall</th><th>F1-Score</th><th>Support</th></tr>
+        </thead>
+        <tbody>
+            <tr class="fila-legitima">
+                <td>0 — Legítima</td>
+                <td>{{ "%.4f"|format(metricas.classification_report['0'].precision) }}</td>
+                <td>{{ "%.4f"|format(metricas.classification_report['0'].recall) }}</td>
+                <td>{{ "%.4f"|format(metricas.classification_report['0']['f1-score']) }}</td>
+                <td>{{ metricas.classification_report['0'].support }}</td>
+            </tr>
+            <tr class="fila-fraude">
+                <td>1 — Fraude</td>
+                <td>{{ "%.4f"|format(metricas.classification_report['1'].precision) }}</td>
+                <td>{{ "%.4f"|format(metricas.classification_report['1'].recall) }}</td>
+                <td>{{ "%.4f"|format(metricas.classification_report['1']['f1-score']) }}</td>
+                <td>{{ metricas.classification_report['1'].support }}</td>
+            </tr>
+            {% if especificidad %}
+            <tr>
+                <td colspan="5" style="padding:.4rem .85rem;font-size:.8rem;
+                    color:var(--texto-claro);background:var(--gris-claro);">
+                    <strong>Especificidad</strong> (TN / (TN + FP)) = 
+                    <strong>{{ "%.4f"|format(especificidad) }}</strong>
+                    — proporción de legítimas correctamente identificadas
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Gráficas: ROC + PR arriba, Matriz + Variables abajo -->
+<div class="graficas-grid" style="margin-top:1.5rem;">
+
+    {% if imagenes.roc_curve %}
+    <div class="grafica-card">
+        <h4>Curva ROC</h4>
+        <img src="data:image/png;base64,{{ imagenes.roc_curve }}" alt="Curva ROC">
+    </div>
+    {% endif %}
+
+    {% if imagenes.pr_curve %}
+    <div class="grafica-card">
+        <h4>Curva Precisión–Recall</h4>
+        <img src="data:image/png;base64,{{ imagenes.pr_curve }}" alt="Curva PR">
+    </div>
+    {% endif %}
+
+    {% if imagenes.confusion_matrix %}
+    <div class="grafica-card">
+        <h4>Matriz de Confusión</h4>
+        <img src="data:image/png;base64,{{ imagenes.confusion_matrix }}" alt="Matriz de confusión">
+    </div>
+    {% endif %}
+
+    {% if imagenes.feature_importances %}
+    <div class="grafica-card grafica-ancha">
+        <h4>Importancia de Variables</h4>
+        <img src="data:image/png;base64,{{ imagenes.feature_importances }}" alt="Importancia de variables">
+    </div>
+    {% endif %}
+
+</div>
+
+{% if not imagenes %}
+<div class="sin-datos">
+    <p>No hay gráficas disponibles para este modelo.</p>
+    <p style="font-size:.875rem;">Las gráficas se generan automáticamente al reentrenar.</p>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

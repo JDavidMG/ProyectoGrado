@@ -1,0 +1,94 @@
+<!-- templates/dashboard.html -->
+{% extends "base.html" %}
+{% block titulo %}Dashboard - FraudeDetect{% endblock %}
+
+{% block contenido %}
+<div class="pagina-header">
+    <h2>📊 Dashboard Principal</h2>
+    <p>Bienvenido, <strong>{{ usuario }}</strong>. Aquí tienes un resumen del sistema.</p>
+</div>
+
+<!-- Tarjetas de métricas del modelo -->
+<div class="tarjetas-grid">
+    <div class="tarjeta tarjeta-azul">
+        <div class="tarjeta-icono">🎯</div>
+        <div class="tarjeta-info">
+            <div class="tarjeta-valor">{{ "%.4f"|format(metricas.roc_auc) if metricas.roc_auc else "—" }}</div>
+            <div class="tarjeta-label">ROC AUC</div>
+        </div>
+    </div>
+    <div class="tarjeta tarjeta-verde">
+        <div class="tarjeta-icono">📈</div>
+        <div class="tarjeta-info">
+            <div class="tarjeta-valor">{{ "%.4f"|format(metricas.pr_auc) if metricas.pr_auc else "—" }}</div>
+            <div class="tarjeta-label">PR AUC</div>
+        </div>
+    </div>
+
+    {% if metricas.classification_report %}
+    <div class="tarjeta tarjeta-naranja">
+        <div class="tarjeta-icono">✅</div>
+        <div class="tarjeta-info">
+            <div class="tarjeta-valor">{{ "%.2f%%"|format(metricas.classification_report.accuracy * 100) }}</div>
+            <div class="tarjeta-label">Accuracy</div>
+        </div>
+    </div>
+    <div class="tarjeta tarjeta-rojo">
+        <div class="tarjeta-icono">🔍</div>
+        <div class="tarjeta-info">
+            <div class="tarjeta-valor">
+                {{ "%.4f"|format(metricas.classification_report['1']['f1-score']) if metricas.classification_report.get('1') else "—" }}
+            </div>
+            <div class="tarjeta-label">F1-Score Fraude</div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Flujo de trabajo -->
+<div class="seccion">
+    <h3>🗺️ Flujo de trabajo</h3>
+    <div class="flujo">
+        <a href="{{ url_for('cargar_archivo') }}" class="paso">
+            <div class="paso-num">1</div>
+            <div class="paso-texto">Cargar<br>Archivo CSV</div>
+        </a>
+        <div class="flecha">→</div>
+        <a href="{{ url_for('visualizar_datos') }}" class="paso">
+            <div class="paso-num">2</div>
+            <div class="paso-texto">Visualizar<br>Datos</div>
+        </a>
+        <div class="flecha">→</div>
+        <a href="{{ url_for('ejecutar_modelo') }}" class="paso">
+            <div class="paso-num">3</div>
+            <div class="paso-texto">Ejecutar<br>Modelo</div>
+        </a>
+        <div class="flecha">→</div>
+        <a href="{{ url_for('ver_resultados') }}" class="paso">
+            <div class="paso-num">4</div>
+            <div class="paso-texto">Ver<br>Resultados</div>
+        </a>
+        <div class="flecha">→</div>
+        <a href="{{ url_for('ver_metricas') }}" class="paso">
+            <div class="paso-num">5</div>
+            <div class="paso-texto">Analizar<br>Métricas</div>
+        </a>
+    </div>
+</div>
+
+<!-- Reportes rápidos -->
+<div class="seccion">
+    <h3>📄 Generar Reportes</h3>
+    <div class="botones-grupo">
+        <a href="{{ url_for('reporte_fraude') }}" class="btn btn-rojo">
+            ⬇️ Reporte de Fraudes
+        </a>
+        <a href="{{ url_for('reporte_rendimiento') }}" class="btn btn-azul">
+            ⬇️ Reporte de Rendimiento
+        </a>
+        <a href="{{ url_for('ver_confusion') }}" class="btn btn-verde">
+            📊 Matriz de Confusión
+        </a>
+    </div>
+</div>
+{% endblock %}

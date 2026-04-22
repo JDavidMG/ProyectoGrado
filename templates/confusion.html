@@ -1,0 +1,31 @@
+<!-- templates/confusion.html -->
+{% extends "base.html" %}
+{% block titulo %}Matriz de Confusión - FraudeDetect{% endblock %}
+
+{% block contenido %}
+<div class="pagina-header">
+    <h2>📊 Matriz de Confusión</h2>
+    <p>Visualiza los aciertos y errores del modelo en la clasificación.</p>
+</div>
+
+<div class="card centrado">
+    {% if img_b64 %}
+    <img src="data:image/png;base64,{{ img_b64 }}" alt="Matriz de Confusión" class="img-grafica">
+    {% else %}
+    <div class="sin-datos">
+        <p>⚠️ No hay datos disponibles. Ejecuta el modelo primero.</p>
+        <a href="{{ url_for('ejecutar_modelo') }}" class="btn btn-primario">Ir a Ejecutar Modelo</a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-top:1.5rem;">
+    <h3>Leyenda</h3>
+    <ul class="leyenda">
+        <li><strong>Verdadero Positivo (VP):</strong> Fraude detectado correctamente.</li>
+        <li><strong>Verdadero Negativo (VN):</strong> Legítima clasificada correctamente.</li>
+        <li><strong>Falso Positivo (FP):</strong> Legítima incorrectamente marcada como fraude.</li>
+        <li><strong>Falso Negativo (FN):</strong> Fraude no detectado por el modelo.</li>
+    </ul>
+</div>
+{% endblock %}

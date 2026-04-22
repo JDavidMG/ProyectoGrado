@@ -1,0 +1,38 @@
+<!-- templates/login.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Iniciar Sesión - FraudeDetect</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-body">
+    <div class="login-card">
+        <div class="login-header">
+            <h1>🛡️ FraudeDetect</h1>
+            <p>Sistema de Detección de Fraude</p>
+            <small>Universidad Libre Bogotá · 2025</small>
+        </div>
+
+        {% if error %}
+        <div class="alerta alerta-error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="campo">
+                <label for="usuario">Usuario</label>
+                <input type="text" id="usuario" name="usuario" placeholder="Ingresa tu usuario" required autofocus>
+            </div>
+            <div class="campo">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" name="password" placeholder="Ingresa tu contraseña" required>
+            </div>
+            <button type="submit" class="btn btn-primario btn-full">Iniciar Sesión</button>
+        </form>
+
+        <div class="login-hint">
+            <small>Usuarios de prueba: <strong>admin</strong> / admin123 · <strong>analista</strong> / fraude2025</small>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!-- templates/historial.html -->
+{% extends "base.html" %}
+{% block titulo %}Historial - FraudeDetect{% endblock %}
+{% block contenido %}
+<div class="pagina-header">
+    <h2>Historial de Análisis</h2>
+    <p>Registro de todos los análisis ejecutados y su estado de revisión manual.</p>
+</div>
+
+<!-- Filtros -->
+<div class="hist-filtros">
+    <form method="GET" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+        <input type="text" name="q" value="{{ busqueda }}"
+               placeholder="🔍 Buscar por nombre, modelo..."
+               style="padding:.45rem .85rem;border:1.5px solid var(--borde);
+                      border-radius:8px;font-size:.875rem;min-width:220px;">
+        <div style="display:flex;gap:.35rem;">
+            {% for val, label in [("todos","Todos"),("completo","✅ Completos"),
+                                   ("pendiente","🔄 Pendientes"),("sin_gt","ℹ️ Sin GT")] %}
+            <a href="?estado={{ val }}&q={{ busqueda }}&pagina=1"
+               class="btn-pp {{ 'btn-pp-activo' if filtro_estado == val else '' }}">
+                {{ label }}
+            </a>
+            {% endfor %}
+        </div>
+        <a href="{{ url_for('ejecutar_modelo') }}" class="btn btn-primario btn-sm"
+           style="margin-left:auto;">▶ Nuevo análisis</a>
+    </form>
+    <div style="color:var(--texto-claro);font-size:.82rem;margin-top:.5rem;">
+        {{ total }} análisis · Página {{ pagina }}/{{ total_paginas }}
+    </div>
+</div>
+
+{% if entradas %}
+<!-- Tabla de historial -->
+<div class="card" style="padding:0;overflow:hidden;">
+    <table class="tabla-hist">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Fecha</th>
+                <th>Modelo</th>
+                <th>Filas</th>
+                <th>Fraudes</th>
+                <th>Estado revisión</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in entradas %}
+            <tr class="{{ 'hist-row-completo' if e.get('revision_completa') else '' }}">
+                <td><strong>{{ e.nombre }}</strong></td>
+                <td style="font-size:.78rem;white-space:nowrap;">{{ e.fecha }}</td>
+                <td style="font-size:.78rem;color:var(--texto-claro);">
+                    {{ e.modelo | replace('.joblib','') }}
+                </td>
+                <td style="text-align:right;">{{ "{:,}".format(e.n_filas) }}</td>
+                <td style="text-align:right;">
+                    {{ "{:,}".format(e.n_fraudes) }}
+                    <span style="color:var(--texto-claro);font-size:.75rem;">
+                        ({{ e.pct_fraude }}%)
+                    </span>
+                </td>
+                <td>
+                    {% if e.get('revision_completa') %}
+                    <span class="hist-badge hist-badge-ok">✅ Completo</span>
+                    {% elif e.get('tiene_gt') %}
+                        {% set pct = e.get('pct_revision', 0) %}
+                        {% if pct == 0 %}
+                        <span class="hist-badge hist-badge-pendiente">⏳ Sin revisar</span>
+                        {% else %}
+                        <span class="hist-badge hist-badge-parcial">
+                            🔄 {{ pct }}%
+                            ({{ e.get('n_revisadas',0) }}/{{ e.get('n_errores',0) }})
+                        </span>
+                        {% endif %}
+                    {% else %}
+                    <span class="hist-badge hist-badge-singt">ℹ️ Sin GT</span>
+                    {% endif %}
+                </td>
+                <td style="white-space:nowrap;">
+                    <div style="display:flex;gap:.3rem;">
+                        <a href="{{ url_for('cargar_historial', archivo=e.archivo) }}"
+                           class="btn btn-primario btn-sm">▶</a>
+                        <a href="{{ url_for('descargar_historial', archivo=e.archivo) }}"
+                           class="btn btn-secundario btn-sm">⬇️</a>
+                        <button class="btn btn-rojo btn-sm"
+                                onclick="eliminar('{{ e.archivo }}', this)">🗑</button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Paginación -->
+<div class="paginacion" style="margin-top:.75rem;">
+    {% if pagina > 1 %}
+    <a href="?estado={{ filtro_estado }}&q={{ busqueda }}&pagina={{ pagina-1 }}"
+       class="btn btn-secundario">← Anterior</a>
+    {% endif %}
+    <span>{{ pagina }} / {{ total_paginas }}</span>
+    {% if pagina < total_paginas %}
+    <a href="?estado={{ filtro_estado }}&q={{ busqueda }}&pagina={{ pagina+1 }}"
+       class="btn btn-secundario">Siguiente →</a>
+    {% endif %}
+</div>
+
+{% else %}
+<div class="sin-datos">
+    {% if busqueda or filtro_estado != 'todos' %}
+    <p>No hay análisis que coincidan con los filtros.</p>
+    <a href="{{ url_for('ver_historial') }}" class="btn btn-secundario">Ver todos</a>
+    {% else %}
+    <p>No hay análisis guardados aún.</p>
+    <a href="{{ url_for('ejecutar_modelo') }}" class="btn btn-primario">Ejecutar primer análisis</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<script>
+function eliminar(archivo, btn) {
+    if (!confirm("¿Eliminar este análisis?")) return;
+    fetch(`/historial/eliminar/${archivo}`, {method:"POST"})
+    .then(r => r.json())
+    .then(d => { if (d.ok) btn.closest("tr").remove(); });
+}
+</script>
+{% endblock %}

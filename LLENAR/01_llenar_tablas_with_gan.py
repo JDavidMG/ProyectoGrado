@@ -255,6 +255,9 @@ df_gen = df_gen.reindex(columns=df.columns)
 df_final = pd.concat([df, df_gen], ignore_index=True, sort=False)\
              .sample(frac=1, random_state=42).reset_index(drop=True)
 
+# Nueva columna fija en todas las filas
+df_final["Ubicacion"] = "Bogotá"
+
 out_noisy_aug = script_dir / "tarjetas_fraude_con_ruido_20pct_augmented.csv"
 df_final.to_csv(out_noisy_aug, index=False)
 print("✅ Dataset final con muestras sintéticas guardado en:", out_noisy_aug)

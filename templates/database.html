@@ -1,0 +1,72 @@
+<!-- templates/database.html -->
+{% extends "base.html" %}
+{% block titulo %}Database - FraudeDetect{% endblock %}
+{% block contenido %}
+<div class="pagina-header">
+    <h2>🗄️ Database de Archivos</h2>
+    <p>Registro histórico de todos los archivos cargados al sistema.</p>
+</div>
+
+<div class="barra-herramientas">
+    <span style="color:var(--texto-claro);font-size:.875rem;">
+        {{ archivos|length }} archivo(s) guardados
+    </span>
+    <div class="botones-grupo">
+        <a href="{{ url_for('cargar_archivo') }}" class="btn btn-primario">⬆️ Cargar nuevo archivo</a>
+    </div>
+</div>
+
+{% if archivos %}
+<div class="db-grid">
+    {% for a in archivos|reverse %}
+    <div class="db-card">
+        <div class="db-card-header">
+            <div class="db-icono">📄</div>
+            <div class="db-info" style="min-width:0;flex:1;">
+                <div class="db-nombre"
+                     title="{{ a.nombre_orig or a.nombre }}">{{ a.nombre_orig or a.nombre }}</div>
+                <div class="db-fecha">📅 {{ a.fecha }}</div>
+            </div>
+        </div>
+        <div class="db-stats">
+            <span class="db-stat">📊 {{ "{:,}".format(a.filas) }} filas</span>
+            <span class="db-stat">📋 {{ a.columnas }} cols</span>
+            {% if a.tiene_fraude %}
+            <span class="db-stat db-stat-fraude">⚠️ {{ "{:,}".format(a.n_fraudes or 0) }} fraudes</span>
+            {% else %}
+            <span class="db-stat db-stat-sin">Sin etiqueta</span>
+            {% endif %}
+        </div>
+        {% if a.descripcion and a.descripcion != a.nombre_orig %}
+        <div class="db-desc" title="{{ a.descripcion }}">{{ a.descripcion }}</div>
+        {% endif %}
+        <div class="db-acciones">
+            <a href="{{ url_for('usar_archivo_db', nombre=a.nombre) }}"
+               class="btn btn-primario btn-sm">▶ Usar</a>
+            <a href="{{ url_for('descargar_archivo_db', nombre=a.nombre) }}"
+               class="btn btn-secundario btn-sm">⬇️ Descargar</a>
+            <button class="btn btn-rojo btn-sm"
+                    onclick="eliminar('{{ a.nombre }}', this)">🗑 Eliminar</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="sin-datos">
+    <p>📂 No hay archivos guardados aún.</p>
+    <a href="{{ url_for('cargar_archivo') }}" class="btn btn-primario">Cargar primer archivo</a>
+</div>
+{% endif %}
+
+<script>
+function eliminar(nombre, btn) {
+    if (!confirm(`¿Eliminar "${nombre}"?`)) return;
+    fetch(`/database/eliminar/${nombre}`, {method:"POST"})
+    .then(r => r.json())
+    .then(d => {
+        if (d.ok) btn.closest(".db-card").remove();
+        else alert("Error al eliminar.");
+    });
+}
+</script>
+{% endblock %}

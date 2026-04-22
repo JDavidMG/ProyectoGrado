@@ -1,0 +1,79 @@
+[
+    {
+        "nombre": "transacciones_fraudulentas_20260414_142608.csv",
+        "nombre_orig": "transacciones_fraudulentas.csv",
+        "descripcion": "transacciones_fraudulentas.csv",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\transacciones_fraudulentas_20260414_142608.csv",
+        "fecha": "2026-04-14 14:26:08",
+        "filas": 200,
+        "columnas": 14,
+        "tiene_fraude": true,
+        "n_fraudes": 200
+    },
+    {
+        "nombre": "plantilla_transacciones (1)_20260414_142537_20260414_151452.csv",
+        "nombre_orig": "plantilla_transacciones (1)_20260414_142537.csv",
+        "descripcion": "xsd",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\plantilla_transacciones (1)_20260414_142537_20260414_151452.csv",
+        "fecha": "2026-04-14 15:14:52",
+        "filas": 3,
+        "columnas": 13,
+        "tiene_fraude": false,
+        "n_fraudes": null
+    },
+    {
+        "nombre": "tarjetas_fraude_con_ruido_20pct_augmented_20260414_153052.csv",
+        "nombre_orig": "tarjetas_fraude_con_ruido_20pct_augmented.csv",
+        "descripcion": "SSS",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\tarjetas_fraude_con_ruido_20pct_augmented_20260414_153052.csv",
+        "fecha": "2026-04-14 15:30:55",
+        "filas": 290000,
+        "columnas": 17,
+        "tiene_fraude": true,
+        "n_fraudes": 110000
+    },
+    {
+        "nombre": "prueba_caso1_nombres_diferentes_20260416_163539.csv",
+        "nombre_orig": "prueba_caso1_nombres_diferentes.csv",
+        "descripcion": "prueba_caso1_nombres_diferentes.csv",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\prueba_caso1_nombres_diferentes_20260416_163539.csv",
+        "fecha": "2026-04-16 16:35:39",
+        "filas": 2,
+        "columnas": 12,
+        "tiene_fraude": false,
+        "n_fraudes": null
+    },
+    {
+        "nombre": "prueba_caso1_nombres_diferentes_20260420_180656.csv",
+        "nombre_orig": "prueba_caso1_nombres_diferentes.csv",
+        "descripcion": "prueba_caso1_nombres_diferentes.csv",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\prueba_caso1_nombres_diferentes_20260420_180656.csv",
+        "fecha": "2026-04-20 18:06:56",
+        "filas": 2,
+        "columnas": 12,
+        "tiene_fraude": false,
+        "n_fraudes": null
+    },
+    {
+        "nombre": "transacciones_fraudulentas_20260414_142608_20260420_190745.csv",
+        "nombre_orig": "transacciones_fraudulentas_20260414_142608.csv",
+        "descripcion": "transacciones_fraudulentas_20260414_142608.csv",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\transacciones_fraudulentas_20260414_142608_20260420_190745.csv",
+        "fecha": "2026-04-20 19:07:45",
+        "filas": 200,
+        "columnas": 14,
+        "tiene_fraude": true,
+        "n_fraudes": 200
+    },
+    {
+        "nombre": "tarjetas_fraude_con_ruido_20pct_augmented_20260414_153052_20260420_191001.csv",
+        "nombre_orig": "tarjetas_fraude_con_ruido_20pct_augmented_20260414_153052.csv",
+        "descripcion": "tarjetas_fraude_con_ruido_20pct_augmented_20260414_153052.csv",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\tarjetas_fraude_con_ruido_20pct_augmented_20260414_153052_20260420_191001.csv",
+        "fecha": "2026-04-20 19:10:04",
+        "filas": 290000,
+        "columnas": 17,
+        "tiene_fraude": true,
+        "n_fraudes": 110000
+    }
+]
