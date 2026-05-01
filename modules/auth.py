@@ -9,7 +9,6 @@ USERS_FILE = Path(__file__).parent.parent / "users.json"
 
 # Usuarios por defecto (se crean si no existe el archivo)
 USUARIOS_DEFAULT = {
-    "admin": "admin123",
     "analista": "fraude2025"
 }
 

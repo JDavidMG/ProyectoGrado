@@ -1,3 +1,1 @@
-card_kind,card_state,exp_date,repo,geo,ratio,last_op,overdue,pay_stat,covered,reissued,pay_type
-clasica,activa,2026-08-15,0,nacional,0.35,2025-08-01,0,al dia,0,0,privada
-oro,bloqueada,2024-03-10,1,internacional,0.95,,4,en mora,1,1,independiente
+Timestamp_reporte,Numero_tarjeta,Tipo_tarjeta,Estado_tarjeta,Acumulado_cupo,Cuotas_mora,Localizacion_tarjeta,probabilidad,clasificacion,marcacion_usuario

@@ -1115,3 +1115,11 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--gris-claro)
 .prep-label  { font-size: .8rem; font-weight: 600; color: var(--texto); }
 .prep-nota   { display: block; font-size: .72rem; color: #92400e; font-weight: 400; margin-top: .1rem; }
 .prep-nota-ok{ display: block; font-size: .72rem; color: var(--verde); font-weight: 400; margin-top: .1rem; }
+
+/* ─── PESTAÑA BLOQUEADA ───────────────────── */
+.tab-bloqueada {
+    opacity: .5; cursor: not-allowed;
+    border-color: var(--borde) !important;
+    color: var(--texto-claro) !important;
+    background: var(--gris-claro) !important;
+}

@@ -55,29 +55,42 @@
 
 <!-- ─── PESTAÑAS ──────────────────────────────── -->
 <div class="tabs">
-    <a href="?tab=fraudes&pagina=1"
+    <a href="?tab=fraudes&pagina=1&pp={{ pp }}"
        class="tab {{ 'tab-activo tab-rojo' if tab=='fraudes' else '' }}">
         ⚠️ Fraudes Detectados
         <span class="tab-badge">{{ n_fraudes }}</span>
     </a>
-    <a href="?tab=legitimas&pagina=1"
+    <a href="?tab=legitimas&pagina=1&pp={{ pp }}"
        class="tab {{ 'tab-activo tab-verde' if tab=='legitimas' else '' }}">
         ✅ Legítimas
         <span class="tab-badge">{{ n_legitimas }}</span>
     </a>
-    {% if tiene_ground_truth %}
-    <a href="?tab=analisis&pagina=1"
+    {% if revision_completa_global %}
+    <a href="?tab=analisis&pagina=1&pp={{ pp }}"
        class="tab {{ 'tab-activo tab-azul' if tab=='analisis' else '' }}">
         📊 Análisis de Precisión
     </a>
+    {% else %}
+    <span class="tab tab-bloqueada"
+          title="Completa la revisión al 100% para desbloquear ({{ pct_revision_global }}% completado)">
+        🔒 Análisis de Precisión
+        <span class="tab-badge" style="background:#94a3b8;">{{ pct_revision_global }}%</span>
+    </span>
     {% endif %}
-    <a href="?tab=manual&pagina=1"
-       class="tab {{ 'tab-activo tab-morado' if tab=='manual' else '' }}">
-        ✏️ Manual
-        {% if analisis %}
-        <span class="tab-badge">{{ (analisis.fp + analisis.fn) if analisis else 0 }}</span>
-        {% endif %}
-    </a>
+</div>
+
+<!-- Barra de progreso de revisión global -->
+<div style="background:var(--gris-claro);border-radius:10px;padding:.65rem 1rem;
+            margin-bottom:1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+    <div style="font-size:.82rem;font-weight:600;flex:1;">
+        💡 Haz clic en cualquier fila para revisarla —
+        Progreso: <strong id="manual-pct">{{ pct_revision_global }}%</strong>
+        ({{ total_marcados }} de {{ total_marcables }} revisadas)
+    </div>
+    <div class="barra-progreso-fondo" style="height:8px;width:200px;flex-shrink:0;">
+        <div class="barra-progreso-relleno" id="manual-barra"
+             style="width:{{ pct_revision_global }}%"></div>
+    </div>
 </div>
 
 <!-- ─── ANÁLISIS TP/FP/TN/FN ─────────────────── -->
@@ -116,56 +129,6 @@
     </div>
 </div>
 {% endif %}
-
-<!-- ─── PESTAÑA MANUAL ─────────────────────────── -->
-{% if tab == 'manual' %}
-{% if not tiene_ground_truth %}
-<div class="alerta alerta-error" style="margin-bottom:1rem;">
-    Para usar esta pestaña el CSV debe tener una columna <strong><code>fraude</code></strong>
-    con el valor real (1 = fraude · 0 = legítima).
-</div>
-{% else %}
-<div class="manual-filtros-barra">
-    <a href="?tab=manual&filtro_manual=todos&pagina=1"
-       class="manual-filtro-btn {% if filtro_manual=='todos' %}mf-activo{% endif %}">
-        Todos los errores
-        {% if analisis %}<span class="tab-badge">{{ analisis.fp + analisis.fn }}</span>{% endif %}
-    </a>
-    <a href="?tab=manual&filtro_manual=fn&pagina=1"
-       class="manual-filtro-btn {% if filtro_manual=='fn' %}mf-activo mf-fn{% endif %}">
-        ⚠️ Falsos Negativos
-        {% if analisis %}<span class="tab-badge">{{ analisis.fn }}</span>{% endif %}
-    </a>
-    <a href="?tab=manual&filtro_manual=fp&pagina=1"
-       class="manual-filtro-btn {% if filtro_manual=='fp' %}mf-activo mf-fp{% endif %}">
-        ❌ Falsos Positivos
-        {% if analisis %}<span class="tab-badge">{{ analisis.fp }}</span>{% endif %}
-    </a>
-</div>
-
-{% if tiene_ground_truth %}
-<div style="background:#eff6ff;border-left:3px solid var(--primario);border-radius:8px;
-     padding:.55rem .85rem;margin-bottom:.6rem;font-size:.82rem;color:var(--texto-claro);">
-    💡 Haz clic en cualquier fila — el sistema buscará transacciones similares automáticamente.
-</div>
-<div id="manual-progreso-cont" style="background:var(--gris-claro);border-radius:10px;
-     padding:.75rem 1rem;margin-bottom:1rem;">
-    <div style="font-size:.82rem;font-weight:600;">
-        Progreso de revisión: <strong id="manual-pct">—</strong>
-        · <span id="manual-revisadas">0</span> etiquetadas
-    </div>
-    <div class="barra-progreso-fondo" style="height:8px;margin-top:.35rem;">
-        <div class="barra-progreso-relleno" id="manual-barra" style="width:0%"></div>
-    </div>
-    <p id="manual-aviso-ok" style="display:none;color:var(--verde);
-       font-size:.82rem;margin-top:.4rem;font-weight:600;">
-        ✅ Hay transacciones etiquetadas. Puedes reentrenar el modelo.
-    </p>
-</div>
-{% endif %}
-{% endif %}
-{% endif %}
-
 
 {% if not (tab == 'manual' and not tiene_ground_truth) %}
 <div class="barra-herramientas">

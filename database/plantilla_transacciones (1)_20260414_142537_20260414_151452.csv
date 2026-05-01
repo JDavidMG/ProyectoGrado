@@ -1,4 +1,0 @@
-Numero_tarjeta,Tipo_tarjeta,Estado_tarjeta,Fecha_vencimiento,Indicador_repositorio,Localizacion_tarjeta,Acumulado_cupo,Fecha_ult_retiro,Cuotas_mora,Ind_estado,Es_amparada,Es_reexpedicion,Tipo_nomina
-A1B2C3D4E5F6,clasica,activa,2026-08-15,0,nacional,0.35,2025-08-01,0,al dia,0,0,privada
-G7H8I9J0K1L2,oro,bloqueada,2024-03-10,1,internacional,0.95,,4,en mora,1,1,independiente
-M3N4O5P6Q7R8,platinum,activa,2027-11-30,0,nacional,0.1,2025-09-10,0,al dia,0,0,gobierno

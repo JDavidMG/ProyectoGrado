@@ -75,5 +75,60 @@
         "columnas": 17,
         "tiene_fraude": true,
         "n_fraudes": 110000
+    },
+    {
+        "nombre": "tarjetas_fraude_equilibrado_20260422_190557.csv",
+        "nombre_orig": "tarjetas_fraude_equilibrado.csv",
+        "descripcion": "tarjetas_fraude_equilibrado.csv",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\tarjetas_fraude_equilibrado_20260422_190557.csv",
+        "fecha": "2026-04-22 19:06:02",
+        "filas": 1000000,
+        "columnas": 14,
+        "tiene_fraude": true,
+        "n_fraudes": 500000
+    },
+    {
+        "nombre": "prueba_caso1_nombres_diferentes_20260423_211640.csv",
+        "nombre_orig": "prueba_caso1_nombres_diferentes.csv",
+        "descripcion": "prueba_caso1_nombres_diferentes.csv",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\prueba_caso1_nombres_diferentes_20260423_211640.csv",
+        "fecha": "2026-04-23 21:16:40",
+        "filas": 2,
+        "columnas": 12,
+        "tiene_fraude": false,
+        "n_fraudes": null
+    },
+    {
+        "nombre": "prueba_caso1_nombres_diferentes_20260501_142846.csv",
+        "nombre_orig": "prueba_caso1_nombres_diferentes.csv",
+        "descripcion": "prueba_caso1_nombres_diferentes.csv",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\prueba_caso1_nombres_diferentes_20260501_142846.csv",
+        "fecha": "2026-05-01 14:28:46",
+        "filas": 2,
+        "columnas": 12,
+        "tiene_fraude": false,
+        "n_fraudes": null
+    },
+    {
+        "nombre": "prueba_caso1_nombres_diferentes_20260501_142907.csv",
+        "nombre_orig": "prueba_caso1_nombres_diferentes.csv",
+        "descripcion": "wwww",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\prueba_caso1_nombres_diferentes_20260501_142907.csv",
+        "fecha": "2026-05-01 14:29:07",
+        "filas": 2,
+        "columnas": 12,
+        "tiene_fraude": false,
+        "n_fraudes": null
+    },
+    {
+        "nombre": "transacciones_fraudulentas_20260501_143547.csv",
+        "nombre_orig": "transacciones_fraudulentas.csv",
+        "descripcion": "wasdw",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\transacciones_fraudulentas_20260501_143547.csv",
+        "fecha": "2026-05-01 14:35:47",
+        "filas": 200,
+        "columnas": 14,
+        "tiene_fraude": true,
+        "n_fraudes": 200
     }
 ]

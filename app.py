@@ -519,7 +519,8 @@ def ejecutar_modelo():
             modelo_nombre=ruta_modelo.name,
             db_nombre=session.get("db_nombre_activo", "")
         )
-        session["historial_nombre_activo"] = entrada["nombre"]
+        session["historial_nombre_activo"]  = entrada["nombre"]
+        session["historial_archivo_activo"] = entrada["archivo"]  # para sincronizar al marcar
 
         return redirect(url_for("ver_resultados"))
 
@@ -547,47 +548,30 @@ def ver_resultados():
 
     tiene_gt = "fraude" in df.columns
 
-    if tiene_gt:
-        y_real = df["fraude"].astype(int)
-        y_pred = df["prediccion"].astype(int)
-        # Con ground truth: Fraudes = TP, Legítimas = TN (excluir FP y FN)
-        n_fraudes   = int(((y_real==1) & (y_pred==1)).sum())   # TP
-        n_legitimas = int(((y_real==0) & (y_pred==0)).sum())   # TN
-    else:
-        n_fraudes   = int((df["prediccion"] == 1).sum())
-        n_legitimas = int((df["prediccion"] == 0).sum())
+    # Contadores de las pestañas: siempre lo que el modelo predijo
+    # (coincide con el filtro de cada pestaña)
+    n_fraudes   = int((df["prediccion"] == 1).sum())
+    n_legitimas = int((df["prediccion"] == 0).sum())
+
+    filtro_manual = request.args.get("filtro_manual", "todos")
 
     if tab == "legitimas":
-        if tiene_gt:
-            # Solo TN (era legítima Y el modelo lo dijo bien)
-            y_real = df["fraude"].astype(int)
-            y_pred = df["prediccion"].astype(int)
-            df_tab = df[(y_real==0) & (y_pred==0)].copy()
-        else:
-            df_tab = df[df["prediccion"] == 0].copy()
+        # Todas las clasificadas como legítimas por el modelo
+        df_tab = df[df["prediccion"] == 0].copy()
     elif tab == "fraudes":
-        if tiene_gt:
-            # Solo TP (era fraude Y el modelo lo detectó)
-            y_real = df["fraude"].astype(int)
-            y_pred = df["prediccion"].astype(int)
-            df_tab = df[(y_real==1) & (y_pred==1)].copy()
-        else:
-            df_tab = df[df["prediccion"] == 1].copy()
+        # Todas las clasificadas como fraude por el modelo
+        df_tab = df[df["prediccion"] == 1].copy()
     elif tab == "analisis":
+        # Solo disponible cuando revisión es completa
         df_tab = df.copy()
-    elif tab == "manual":
-        filtro_manual = request.args.get("filtro_manual", "todos")
         if tiene_gt:
+            df_tab["resultado"] = "—"
             y_real = df["fraude"].astype(int)
             y_pred = df["prediccion"].astype(int)
-            if filtro_manual == "fn":
-                df_tab = df[(y_real==1) & (y_pred==0)].copy()
-            elif filtro_manual == "fp":
-                df_tab = df[(y_real==0) & (y_pred==1)].copy()
-            else:  # todos los errores
-                df_tab = df[(y_real!=y_pred)].copy()
-        else:
-            df_tab = pd.DataFrame()  # sin ground truth → tabla vacía
+            df_tab.loc[(y_real==1)&(y_pred==1),"resultado"] = "✅ VP"
+            df_tab.loc[(y_real==0)&(y_pred==1),"resultado"] = "❌ FP"
+            df_tab.loc[(y_real==0)&(y_pred==0),"resultado"] = "✅ VN"
+            df_tab.loc[(y_real==1)&(y_pred==0),"resultado"] = "❌ FN"
     else:
         df_tab = df[df["prediccion"] == 1].copy()
 
@@ -636,6 +620,12 @@ def ver_resultados():
     if "marcacion_usuario" in df.columns:
         n_confirmados = int((df["marcacion_usuario"]=="verdadero_positivo").sum())
 
+    # Calcular progreso de revisión para activar Análisis de Precisión
+    total_marcables = int((df["prediccion"].notna()).sum()) if "prediccion" in df.columns else 0
+    total_marcados  = int(df["marcacion_usuario"].notna().sum())                       if "marcacion_usuario" in df.columns else 0
+    pct_revision_global = round(total_marcados / total_marcables * 100, 1)                           if total_marcables > 0 else 0
+    revision_completa_global = total_marcados >= total_marcables and total_marcables > 0
+
     # Mapa de índices ya marcados para colorear filas sin abrir el modal
     marcados_idx = {}
     if "marcacion_usuario" in df.columns:
@@ -651,10 +641,14 @@ def ver_resultados():
                            tab=tab, tiene_ground_truth=tiene_gt,
                            analisis=analisis, n_confirmados=n_confirmados,
                            modelo_usado=session.get("modelo_usado","—"),
-                           filtro_manual=request.args.get("filtro_manual","todos"),
+                           filtro_manual=filtro_manual,
                            pp=pp_raw,
                            nombre_analisis=session.get("historial_nombre_activo",""),
-                           marcados_idx=marcados_idx)
+                           marcados_idx=marcados_idx,
+                           pct_revision_global=pct_revision_global,
+                           revision_completa_global=revision_completa_global,
+                           total_marcados=total_marcados,
+                           total_marcables=total_marcables)
 
 
 # ── Marcar transacción ─────────────────────────────────────────────────────
@@ -746,6 +740,35 @@ def marcar_lote():
             df.loc[idx, "marcacion_usuario"] = marcacion
             df.loc[idx, "etiqueta_usuario"]  = 1 if marcacion == "verdadero_positivo" else 0
     df.to_csv(ruta, index=False)
+
+    # Sincronizar con el CSV del historial y actualizar index.json
+    archivo_hist = session.get("historial_archivo_activo")
+    if archivo_hist:
+        ruta_hist = HISTORIAL_DIR / archivo_hist
+        if ruta_hist.exists():
+            df.to_csv(ruta_hist, index=False)
+
+            # Recalcular pct_revision y actualizar el index.json en tiempo real
+            idx_path = HISTORIAL_DIR / "index.json"
+            if idx_path.exists():
+                with open(idx_path) as f:
+                    idx = json.load(f)
+                for entrada in idx:
+                    if entrada.get("archivo") == archivo_hist:
+                        tiene_gt = "fraude" in df.columns and "prediccion" in df.columns
+                        if tiene_gt:
+                            y_real = df["fraude"].astype(int)
+                            y_pred = df["prediccion"].astype(int)
+                            n_err  = int((y_real != y_pred).sum())
+                            n_rev  = int(df["etiqueta_usuario"].notna().sum())                                      if "etiqueta_usuario" in df.columns else 0
+                            entrada["n_errores"]        = n_err
+                            entrada["n_revisadas"]      = n_rev
+                            entrada["pct_revision"]     = round(n_rev / n_err * 100, 1)                                                           if n_err > 0 else 0
+                            entrada["revision_completa"] = n_err > 0 and n_rev >= n_err
+                        break
+                with open(idx_path, "w") as f:
+                    json.dump(idx, f, indent=4, ensure_ascii=False)
+
     return jsonify({"ok": True, "n": len(indices),
                     "msg": f"{len(indices)} transacciones marcadas."})
 
@@ -858,10 +881,11 @@ def cargar_historial(archivo):
                     entrada = e
                     break
 
-    session["resultados_path"]          = str(ruta)
-    session["modelo_usado"]             = entrada.get("modelo", "—")
-    session["historial_nombre_activo"]  = entrada.get("nombre", archivo)
-    session["db_nombre_activo"]         = entrada.get("database", "")
+    session["resultados_path"]           = str(ruta)
+    session["modelo_usado"]              = entrada.get("modelo", "—")
+    session["historial_nombre_activo"]   = entrada.get("nombre", archivo)
+    session["db_nombre_activo"]          = entrada.get("database", "")
+    session["historial_archivo_activo"]  = archivo   # para sincronizar marcaciones
     return redirect(url_for("ver_resultados"))
 
 
