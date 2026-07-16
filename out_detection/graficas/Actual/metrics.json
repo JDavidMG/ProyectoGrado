@@ -1,0 +1,39 @@
+{
+    "roc_auc": 0.9985204489411557,
+    "pr_auc": 0.9983667024386651,
+    "classification_report": {
+        "0": {
+            "precision": 0.9839080459770115,
+            "recall": 0.9960615825277479,
+            "f1-score": 0.9899475135664086,
+            "support": 5586.0
+        },
+        "1": {
+            "precision": 0.9949599083619702,
+            "recall": 0.9794767704104645,
+            "f1-score": 0.9871576315490397,
+            "support": 4434.0
+        },
+        "accuracy": 0.9887225548902195,
+        "macro avg": {
+            "precision": 0.9894339771694909,
+            "recall": 0.9877691764691062,
+            "f1-score": 0.9885525725577242,
+            "support": 10020.0
+        },
+        "weighted avg": {
+            "precision": 0.9887986605293974,
+            "recall": 0.9887225548902195,
+            "f1-score": 0.9887129490090221,
+            "support": 10020.0
+        }
+    },
+    "reentrenado_el": "2026-06-16 20:38:47",
+    "n_errores_incorporados": 200,
+    "complejidad": "rapido",
+    "best_params": {
+        "n_estimators": 150,
+        "max_depth": "20"
+    },
+    "graficas_dir": "C:\\Users\\Julia\\Documents\\Juli\u00e1n\\Universidad\\Proyecto\\Codigo proyecto de grado\\out_detection\\graficas\\Actual"
+}

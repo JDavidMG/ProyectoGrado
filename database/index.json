@@ -130,5 +130,60 @@
         "columnas": 14,
         "tiene_fraude": true,
         "n_fraudes": 200
+    },
+    {
+        "nombre": "prueba_caso1_nombres_diferentes_20260507_155958.csv",
+        "nombre_orig": "prueba_caso1_nombres_diferentes.csv",
+        "descripcion": "xd",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\prueba_caso1_nombres_diferentes_20260507_155958.csv",
+        "fecha": "2026-05-07 15:59:58",
+        "filas": 2,
+        "columnas": 12,
+        "tiene_fraude": false,
+        "n_fraudes": null
+    },
+    {
+        "nombre": "transacciones_fraudulentas_20260616_165513.csv",
+        "nombre_orig": "transacciones_fraudulentas.csv",
+        "descripcion": "transacciones_fraudulentas.csv",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\transacciones_fraudulentas_20260616_165513.csv",
+        "fecha": "2026-06-16 16:55:13",
+        "filas": 200,
+        "columnas": 14,
+        "tiene_fraude": true,
+        "n_fraudes": 200
+    },
+    {
+        "nombre": "prueba_caso1_nombres_diferentes_20260616_202919.csv",
+        "nombre_orig": "prueba_caso1_nombres_diferentes.csv",
+        "descripcion": "121",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\prueba_caso1_nombres_diferentes_20260616_202919.csv",
+        "fecha": "2026-06-16 20:29:19",
+        "filas": 2,
+        "columnas": 12,
+        "tiene_fraude": false,
+        "n_fraudes": null
+    },
+    {
+        "nombre": "transacciones_fraudulentas_20260616_203205.csv",
+        "nombre_orig": "transacciones_fraudulentas.csv",
+        "descripcion": "Final",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\transacciones_fraudulentas_20260616_203205.csv",
+        "fecha": "2026-06-16 20:32:05",
+        "filas": 200,
+        "columnas": 14,
+        "tiene_fraude": true,
+        "n_fraudes": 200
+    },
+    {
+        "nombre": "transacciones_fraudulentas_20260710_175350.csv",
+        "nombre_orig": "transacciones_fraudulentas.csv",
+        "descripcion": "transacciones_fraudulentas.csv",
+        "ruta": "C:\\Users\\Julia\\Documents\\Julián\\Universidad\\Proyecto\\Codigo proyecto de grado\\database\\transacciones_fraudulentas_20260710_175350.csv",
+        "fecha": "2026-07-10 17:53:50",
+        "filas": 200,
+        "columnas": 14,
+        "tiene_fraude": true,
+        "n_fraudes": 200
     }
 ]
